@@ -3,6 +3,10 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 
+// Import routes
+const linkRoutes = require("./routes/link");
+const authRoutes = require("./routes/auth");
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -12,60 +16,34 @@ mongoose
   .then(() => console.log("DB connected"))
   .catch(err => console.log(err));
 
-const ShortUrl = mongoose.model(
-  "ShortUrl",
-  new mongoose.Schema({
-    original: String,
-    short: String
-  })
-);
+// Use routes
+app.use("/api", linkRoutes);
+app.use("/api/auth", authRoutes);
 
-app.post("/api/shorten", async (req, res) => {
+// Redirect route for short links
+app.get("/r/:code", async (req, res) => {
+  const Link = require("./models/Link");
   try {
-    const { url } = req.body;
+    const code = req.params.code;
+    const link = await Link.findOne({ shortCode: code });
 
-    if (!url || typeof url !== "string") {
-      return res.status(400).json({ error: "Valid URL is required" });
+    if (!link) {
+      return res.status(404).send("Link not found");
     }
 
-    const trimmedUrl = url.trim();
-
-    // Validate URL format
-    try {
-      new URL(trimmedUrl);
-    } catch {
-      return res.status(400).json({ error: "Invalid URL format" });
+    if (link.status === "inactive") {
+      return res.status(403).send("This link has been deactivated");
     }
 
-    const random = Math.random().toString(36).substring(2, 8);
-    const short = "shr.ly/" + random;
+    // Track click
+    link.clicks += 1;
+    await link.save();
 
-    const data = await ShortUrl.create({
-      original: trimmedUrl,
-      short: short
-    });
-
-    res.json({
-      success: true,
-      original: data.original,
-      short: data.short,
-      _id: data._id
-    });
+    res.redirect(link.originalUrl);
   } catch (error) {
-    console.error("Error shortening URL:", error);
-    res.status(500).json({ error: "Failed to create short link" });
+    console.error("Error redirecting:", error);
+    res.status(500).send("Server error");
   }
-});
-
-app.get("/:code", async (req, res) => {
-  const code = req.params.code;
-  const item = await ShortUrl.findOne({ short: "shr.ly/" + code });
-
-  if (!item) {
-    return res.status(404).send("Not found");
-  }
-
-  res.redirect(item.original);
 });
 
 const PORT = process.env.PORT || 5000;

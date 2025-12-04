@@ -3,6 +3,8 @@ import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
 import "../Css/Link.css";
 
+const API_URL = "http://localhost:5000/api";
+
 export default function Link() {
   const [showCreateBox, setShowCreateBox] = useState(false);
   const [showLinkInfo, setShowLinkInfo] = useState(false);
@@ -14,6 +16,16 @@ export default function Link() {
   const [messageType, setMessageType] = useState(""); // 'success' or 'error'
   const [editingIdx, setEditingIdx] = useState(null);
   const [editUrl, setEditUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [selectedLinks, setSelectedLinks] = useState([]);
+  
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterTag, setFilterTag] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+  const [filterClicks, setFilterClicks] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
 
   const toggleCreateBox = () => {
     setShowCreateBox(!showCreateBox);
@@ -25,17 +37,7 @@ export default function Link() {
 
   const toggleLinkInfo = () => setShowLinkInfo(!showLinkInfo);
 
-  // Example data for quick stats and links table
-  const [links, setLinks] = useState([
-    {
-      original: "https://example.com/long-url",
-      short: "shrinkly.link/abc123",
-      clicks: 42,
-      date: "2025-11-23",
-      status: "active",
-      tags: "marketing",
-    },
-  ]);
+  const [links, setLinks] = useState([]);
 
   // Function to validate URL
   const isValidUrl = (url) => {
@@ -45,6 +47,48 @@ export default function Link() {
     } catch {
       return false;
     }
+  };
+
+  // Fetch all links on component mount
+  useEffect(() => {
+    fetchLinks();
+  }, []);
+
+  // Fetch links with filters
+  const fetchLinks = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append("search", searchQuery);
+      if (filterStatus) params.append("status", filterStatus);
+      if (filterTag) params.append("tag", filterTag);
+      if (filterDate) params.append("startDate", filterDate);
+      if (sortBy) params.append("sortBy", sortBy);
+      
+      // Handle clicks filter
+      if (filterClicks) {
+        const [min, max] = filterClicks.split("-");
+        if (min) params.append("minClicks", min);
+        if (max && max !== "+") params.append("maxClicks", max);
+      }
+
+      const response = await fetch(`${API_URL}/links?${params.toString()}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setLinks(data.links);
+      }
+    } catch (error) {
+      console.error("Error fetching links:", error);
+      setMessage("Error loading links");
+      setMessageType("error");
+    }
+    setLoading(false);
+  };
+
+  // Handle search
+  const handleSearch = () => {
+    fetchLinks();
   };
 
   // Create Link Handler
@@ -62,29 +106,21 @@ export default function Link() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/shorten", {
+      const response = await fetch(`${API_URL}/shorten`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          original: longUrl,
+          originalUrl: longUrl,
           customSlug: customSlug || undefined,
+          domain: domain
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        const newLink = {
-          original: longUrl,
-          short: `${domain}/${data.short}`,
-          clicks: 0,
-          date: new Date().toISOString().split("T")[0],
-          status: "active",
-          tags: "",
-        };
-
-        setLinks([...links, newLink]);
-        setShortLink(`${domain}/${data.short}`);
+        setLinks([data.link, ...links]);
+        setShortLink(data.link.short);
         setMessage(`✓ Link created! Total links created: ${links.length + 1}`);
         setMessageType("success");
         setLongUrl("");
@@ -111,12 +147,27 @@ export default function Link() {
   };
 
   // Delete Link Handler
-  const handleDeleteLink = (idx) => {
-    const deletedLink = links[idx];
-    setLinks(links.filter((_, i) => i !== idx));
-    setMessage(`✓ Link deleted. Total links: ${links.length - 1}`);
-    setMessageType("success");
-    setTimeout(() => setMessage(""), 3000);
+  const handleDeleteLink = async (idx) => {
+    const linkToDelete = links[idx];
+    try {
+      const response = await fetch(`${API_URL}/links/${linkToDelete._id}`, {
+        method: "DELETE"
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setLinks(links.filter((_, i) => i !== idx));
+        setMessage(`✓ Link deleted. Total links: ${links.length - 1}`);
+        setMessageType("success");
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        setMessage(data.message || "Failed to delete link");
+        setMessageType("error");
+      }
+    } catch (error) {
+      setMessage("Error deleting link");
+      setMessageType("error");
+    }
   };
 
   // Edit Link Handler
@@ -126,7 +177,7 @@ export default function Link() {
   };
 
   // Save Edit Handler
-  const handleSaveEdit = (idx) => {
+  const handleSaveEdit = async (idx) => {
     if (!editUrl.trim()) {
       setMessage("URL cannot be empty");
       setMessageType("error");
@@ -139,13 +190,149 @@ export default function Link() {
       return;
     }
 
-    const updatedLinks = [...links];
-    updatedLinks[idx].original = editUrl;
-    setLinks(updatedLinks);
-    setEditingIdx(null);
-    setMessage("✓ Link updated successfully");
-    setMessageType("success");
-    setTimeout(() => setMessage(""), 3000);
+    const linkToUpdate = links[idx];
+    try {
+      const response = await fetch(`${API_URL}/links/${linkToUpdate._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ originalUrl: editUrl })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        const updatedLinks = [...links];
+        updatedLinks[idx] = data.link;
+        setLinks(updatedLinks);
+        setEditingIdx(null);
+        setMessage("✓ Link updated successfully");
+        setMessageType("success");
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        setMessage(data.message || "Failed to update link");
+        setMessageType("error");
+      }
+    } catch (error) {
+      setMessage("Error updating link");
+      setMessageType("error");
+    }
+  };
+
+  // Handle checkbox selection
+  const handleSelectLink = (idx) => {
+    const linkId = links[idx]._id;
+    if (selectedLinks.includes(linkId)) {
+      setSelectedLinks(selectedLinks.filter(id => id !== linkId));
+    } else {
+      setSelectedLinks([...selectedLinks, linkId]);
+    }
+  };
+
+  // Handle select all
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedLinks(links.map(link => link._id));
+    } else {
+      setSelectedLinks([]);
+    }
+  };
+
+  // Bulk delete handler
+  const handleBulkDelete = async () => {
+    if (selectedLinks.length === 0) {
+      setMessage("Please select links to delete");
+      setMessageType("error");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/links/bulk-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedLinks })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setLinks(links.filter(link => !selectedLinks.includes(link._id)));
+        setSelectedLinks([]);
+        setMessage(data.message);
+        setMessageType("success");
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        setMessage(data.message || "Failed to delete links");
+        setMessageType("error");
+      }
+    } catch (error) {
+      setMessage("Error deleting links");
+      setMessageType("error");
+    }
+  };
+
+  // Bulk activate handler
+  const handleBulkActivate = async () => {
+    if (selectedLinks.length === 0) {
+      setMessage("Please select links to activate");
+      setMessageType("error");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/links/bulk-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedLinks, status: "active" })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        fetchLinks(); // Refresh links
+        setSelectedLinks([]);
+        setMessage(data.message);
+        setMessageType("success");
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        setMessage(data.message || "Failed to activate links");
+        setMessageType("error");
+      }
+    } catch (error) {
+      setMessage("Error activating links");
+      setMessageType("error");
+    }
+  };
+
+  // Export CSV handler
+  const handleExportCSV = async () => {
+    try {
+      const response = await fetch(`${API_URL}/links/export`);
+      const data = await response.json();
+
+      if (data.success) {
+        // Convert to CSV
+        const headers = ["Original URL", "Short URL", "Clicks", "Status", "Tags", "Created"];
+        const csvContent = [
+          headers.join(","),
+          ...data.data.map(row => 
+            [row.originalUrl, row.shortUrl, row.clicks, row.status, row.tags, row.createdAt].join(",")
+          )
+        ].join("\n");
+
+        // Download CSV
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "links_export.csv";
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        setMessage("✓ Links exported successfully");
+        setMessageType("success");
+        setTimeout(() => setMessage(""), 3000);
+      }
+    } catch (error) {
+      setMessage("Error exporting links");
+      setMessageType("error");
+    }
   };
 
   return (
@@ -233,33 +420,59 @@ export default function Link() {
           {/* Filters & Search */}
           <div className="filters-search">
             <div className="search-bar">
-              <input type="text" placeholder="Search by short link, long link, or tag" />
-              <button className="btn-secondary">Search</button>
+              <input 
+                type="text" 
+                placeholder="Search by short link, long link, or tag"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+              />
+              <button className="btn-secondary" onClick={handleSearch}>Search</button>
             </div>
             <div className="filters">
               <label>Date:</label>
-              <input type="date" />
+              <input 
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+              />
               <label>Clicks:</label>
-              <select>
+              <select
+                value={filterClicks}
+                onChange={(e) => setFilterClicks(e.target.value)}
+              >
                 <option value="">All</option>
                 <option value="0-10">0-10</option>
                 <option value="11-50">11-50</option>
                 <option value="51-100">51-100</option>
-                <option value="100+">100+</option>
+                <option value="100-">100+</option>
               </select>
               <label>Status:</label>
-              <select>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
                 <option value="">All</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
               <label>Sort:</label>
-              <select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
                 <option value="newest">Newest</option>
                 <option value="oldest">Oldest</option>
+                <option value="clicks">Most Clicks</option>
               </select>
               <label>Tag:</label>
-              <input type="text" placeholder="Filter by tag" />
+              <input 
+                type="text" 
+                placeholder="Filter by tag"
+                value={filterTag}
+                onChange={(e) => setFilterTag(e.target.value)}
+              />
+              <button className="btn-secondary" onClick={fetchLinks}>Apply Filters</button>
             </div>
           </div>
 
@@ -273,10 +486,19 @@ export default function Link() {
 
           {/* Links Table */}
           <div className="links-table-wrapper">
+            {loading ? (
+              <p style={{ textAlign: "center", padding: "20px" }}>Loading links...</p>
+            ) : (
             <table className="links-table">
               <thead>
                 <tr>
-                  <th><input type="checkbox" /></th>
+                  <th>
+                    <input 
+                      type="checkbox"
+                      onChange={handleSelectAll}
+                      checked={selectedLinks.length === links.length && links.length > 0}
+                    />
+                  </th>
                   <th>Original URL</th>
                   <th>Short URL</th>
                   <th>Clicks</th>
@@ -287,9 +509,22 @@ export default function Link() {
                 </tr>
               </thead>
               <tbody>
-                {links.map((link, idx) => (
-                  <tr key={idx}>
-                    <td><input type="checkbox" /></td>
+                {links.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" style={{ textAlign: "center", padding: "20px" }}>
+                      No links found. Create your first link!
+                    </td>
+                  </tr>
+                ) : (
+                links.map((link, idx) => (
+                  <tr key={link._id || idx}>
+                    <td>
+                      <input 
+                        type="checkbox"
+                        checked={selectedLinks.includes(link._id)}
+                        onChange={() => handleSelectLink(idx)}
+                      />
+                    </td>
                     <td>
                       {editingIdx === idx ? (
                         <input 
@@ -356,13 +591,29 @@ export default function Link() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
+            )}
             <div className="bulk-actions">
-              <button className="btn-secondary" style={{ backgroundColor: "#dc3545", color: "#fff" }}>Delete Selected</button>
-              <button className="btn-secondary" style={{ backgroundColor: "#28a745" }}>Activate Selected</button>
-              <button className="btn-secondary">Export CSV</button>
+              <button 
+                className="btn-secondary" 
+                style={{ backgroundColor: "#dc3545", color: "#fff" }}
+                onClick={handleBulkDelete}
+                disabled={selectedLinks.length === 0}
+              >
+                Delete Selected ({selectedLinks.length})
+              </button>
+              <button 
+                className="btn-secondary" 
+                style={{ backgroundColor: "#28a745" }}
+                onClick={handleBulkActivate}
+                disabled={selectedLinks.length === 0}
+              >
+                Activate Selected
+              </button>
+              <button className="btn-secondary" onClick={handleExportCSV}>Export CSV</button>
             </div>
           </div>
 
