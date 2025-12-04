@@ -5,10 +5,14 @@ import Footer from "../Components/Footer";  // Assuming Footer is in the Compone
 import { Line, Pie } from "react-chartjs-2";  // For charts, replace with any other charting library if needed
 import { Chart as ChartJS } from "chart.js/auto";  // Import Chart.js if using it
 
+const API_URL = "http://localhost:5000/api";
+
 export default function Dashboard() {
   const [link, setLink] = useState("");  // Selected link for analytics
+  const [links, setLinks] = useState([]); // All links for dropdown
   const [startDate, setStartDate] = useState("");  // Start date for analytics
   const [endDate, setEndDate] = useState("");  // End date for analytics
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalClicks: 0,
     uniqueVisitors: 0,
@@ -17,61 +21,175 @@ export default function Dashboard() {
     referrerCount: 0,
     qrScans: 0,
   });
+  const [devices, setDevices] = useState([]);
+  const [browsers, setBrowsers] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [referrers, setReferrers] = useState([]);
+  const [clickTrends, setClickTrends] = useState([]);
+  const [topLinks, setTopLinks] = useState([]);
+  const [insights, setInsights] = useState({
+    bestDay: "Loading...",
+    bestPlatform: "Loading...",
+    bestHour: "Loading...",
+    topLink: "Loading...",
+    unusualPatterns: "None"
+  });
 
-  // Sample chart data
+  // Fetch all links for the dropdown
+  useEffect(() => {
+    fetchLinks();
+  }, []);
+
+  // Fetch analytics when filters change
+  useEffect(() => {
+    fetchAnalytics();
+    fetchInsights();
+  }, [link, startDate, endDate]);
+
+  const fetchLinks = async () => {
+    try {
+      const response = await fetch(`${API_URL}/links`);
+      const data = await response.json();
+      if (data.success) {
+        setLinks(data.links);
+      }
+    } catch (error) {
+      console.error("Error fetching links:", error);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      let url = link 
+        ? `${API_URL}/analytics/link/${link}?${params.toString()}`
+        : `${API_URL}/analytics?${params.toString()}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.success) {
+        const { analytics } = data;
+        setStats({
+          totalClicks: analytics.totalClicks || 0,
+          uniqueVisitors: analytics.uniqueVisitors || 0,
+          deviceCount: analytics.deviceCount || 0,
+          countryCount: analytics.countryCount || 0,
+          referrerCount: analytics.referrerCount || 0,
+          qrScans: analytics.qrScans || 0,
+        });
+        setDevices(analytics.devices || []);
+        setBrowsers(analytics.browsers || []);
+        setCountries(analytics.countries || []);
+        setReferrers(analytics.referrers || []);
+        setClickTrends(analytics.clickTrends || []);
+        setTopLinks(analytics.topLinks || []);
+      }
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+    }
+    setLoading(false);
+  };
+
+  const fetchInsights = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (link) params.append("linkId", link);
+
+      const response = await fetch(`${API_URL}/analytics/insights?${params.toString()}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setInsights(data.insights);
+      }
+    } catch (error) {
+      console.error("Error fetching insights:", error);
+    }
+  };
+
+  // Chart data from API
   const clickTrendsData = {
-    labels: ["January", "February", "March", "April"],
+    labels: clickTrends.map(t => t.date),
     datasets: [
       {
         label: "Click Trends",
-        data: [12, 19, 3, 5],
+        data: clickTrends.map(t => t.clicks),
         borderColor: "rgba(75,192,192,1)",
+        backgroundColor: "rgba(75,192,192,0.2)",
         tension: 0.1,
+        fill: true,
       },
     ],
   };
 
   const trafficSourcesData = {
-    labels: ["Facebook", "Instagram", "Direct", "Other"],
+    labels: referrers.map(r => r.name),
     datasets: [
       {
-        data: [50, 30, 10, 10],
-        backgroundColor: ["#ff6384", "#36a2eb", "#ffcd56", "#4bc0c0"],
+        data: referrers.map(r => r.clicks),
+        backgroundColor: ["#ff6384", "#36a2eb", "#ffcd56", "#4bc0c0", "#9966ff", "#ff9f40", "#c9cbcf"],
         hoverOffset: 4,
       },
     ],
   };
 
   const deviceAnalyticsData = {
-    labels: ["Mobile", "Desktop", "Tablet"],
+    labels: devices.map(d => d.name),
     datasets: [
       {
-        data: [60, 30, 10],
-        backgroundColor: ["#ff6384", "#36a2eb", "#ffcd56"],
+        data: devices.map(d => d.clicks),
+        backgroundColor: ["#ff6384", "#36a2eb", "#ffcd56", "#4bc0c0"],
         hoverOffset: 4,
       },
     ],
+  };
+
+  // Handle exports
+  const handleExportCSV = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (link) params.append("linkId", link);
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      const response = await fetch(`${API_URL}/analytics/export?${params.toString()}`);
+      const data = await response.json();
+
+      if (data.success) {
+        const headers = ["Short URL", "Original URL", "Device", "Browser", "OS", "Country", "Referrer", "QR Scan", "Clicked At"];
+        const csvContent = [
+          headers.join(","),
+          ...data.data.map(row => 
+            [row.shortUrl, row.originalUrl, row.device, row.browser, row.os, row.country, row.referrer, row.isQrScan, row.clickedAt].join(",")
+          )
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "analytics_export.csv";
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Error exporting:", error);
+    }
+  };
+
+  const handleExportPDF = () => {
+    // For PDF export, you would typically use a library like jsPDF
+    alert("PDF export requires additional setup with jsPDF library");
   };
 
   // Handle link and date changes
   const handleLinkChange = (e) => setLink(e.target.value);
   const handleStartDateChange = (e) => setStartDate(e.target.value);
   const handleEndDateChange = (e) => setEndDate(e.target.value);
-
-  useEffect(() => {
-    // Here, you can fetch data from API based on the selected link and dates
-    // Just a simulated fetch (replace this with actual data fetching)
-    setTimeout(() => {
-      setStats({
-        totalClicks: 1200,
-        uniqueVisitors: 800,
-        deviceCount: 500,
-        countryCount: 50,
-        referrerCount: 15,
-        qrScans: 200,
-      });
-    }, 2000);
-  }, [link, startDate, endDate]);
 
   return (
     <>
@@ -87,8 +205,12 @@ export default function Dashboard() {
                   value={link}
                   onChange={handleLinkChange}
                 >
-                  <option value="">Select link...</option>
-                  {/* Populate dynamic links from API */}
+                  <option value="">All Links</option>
+                  {links.map((l) => (
+                    <option key={l._id} value={l._id}>
+                      {l.short}
+                    </option>
+                  ))}
                 </select>
                 <input
                   type="date"
@@ -110,41 +232,53 @@ export default function Dashboard() {
             {/* Performance Cards */}
             <section className="performance-cards">
               <div className="card">
-                Total Clicks <span>{stats.totalClicks}</span>
+                Total Clicks <span>{loading ? "..." : stats.totalClicks}</span>
               </div>
               <div className="card">
-                Unique Visitors <span>{stats.uniqueVisitors}</span>
+                Unique Visitors <span>{loading ? "..." : stats.uniqueVisitors}</span>
               </div>
               <div className="card">
-                Devices Used <span>{stats.deviceCount}</span>
+                Devices Used <span>{loading ? "..." : stats.deviceCount}</span>
               </div>
               <div className="card">
-                Countries <span>{stats.countryCount}</span>
+                Countries <span>{loading ? "..." : stats.countryCount}</span>
               </div>
               <div className="card">
-                Referrers <span>{stats.referrerCount}</span>
+                Referrers <span>{loading ? "..." : stats.referrerCount}</span>
               </div>
               <div className="card">
-                QR Scans <span>{stats.qrScans}</span>
+                QR Scans <span>{loading ? "..." : stats.qrScans}</span>
               </div>
             </section>
 
             {/* Click Trends Chart */}
             <section className="chart-section">
               <h2>Click Trends</h2>
-              <Line data={clickTrendsData} />
+              {clickTrends.length > 0 ? (
+                <Line data={clickTrendsData} />
+              ) : (
+                <p>No click data available yet</p>
+              )}
             </section>
 
             {/* Traffic Sources Chart */}
             <section className="chart-section">
               <h2>Traffic Sources</h2>
-              <Pie data={trafficSourcesData} />
+              {referrers.length > 0 ? (
+                <Pie data={trafficSourcesData} />
+              ) : (
+                <p>No referrer data available yet</p>
+              )}
             </section>
 
             {/* Device Analytics Chart */}
             <section className="chart-section">
               <h2>Device Analytics</h2>
-              <Pie data={deviceAnalyticsData} />
+              {devices.length > 0 ? (
+                <Pie data={deviceAnalyticsData} />
+              ) : (
+                <p>No device data available yet</p>
+              )}
             </section>
 
             {/* Browser Analytics Table */}
@@ -158,22 +292,18 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Chrome</td>
-                    <td>600</td>
-                  </tr>
-                  <tr>
-                    <td>Safari</td>
-                    <td>300</td>
-                  </tr>
-                  <tr>
-                    <td>Firefox</td>
-                    <td>200</td>
-                  </tr>
-                  <tr>
-                    <td>Edge</td>
-                    <td>100</td>
-                  </tr>
+                  {browsers.length > 0 ? (
+                    browsers.map((b, idx) => (
+                      <tr key={idx}>
+                        <td>{b.name}</td>
+                        <td>{b.clicks}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="2">No browser data available</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </section>
@@ -189,22 +319,18 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>USA</td>
-                    <td>500</td>
-                  </tr>
-                  <tr>
-                    <td>India</td>
-                    <td>300</td>
-                  </tr>
-                  <tr>
-                    <td>Germany</td>
-                    <td>200</td>
-                  </tr>
-                  <tr>
-                    <td>UK</td>
-                    <td>100</td>
-                  </tr>
+                  {countries.length > 0 ? (
+                    countries.map((c, idx) => (
+                      <tr key={idx}>
+                        <td>{c.name}</td>
+                        <td>{c.clicks}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="2">No country data available</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </section>
@@ -220,22 +346,18 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Facebook</td>
-                    <td>400</td>
-                  </tr>
-                  <tr>
-                    <td>Instagram</td>
-                    <td>250</td>
-                  </tr>
-                  <tr>
-                    <td>WhatsApp</td>
-                    <td>150</td>
-                  </tr>
-                  <tr>
-                    <td>Direct</td>
-                    <td>200</td>
-                  </tr>
+                  {referrers.length > 0 ? (
+                    referrers.map((r, idx) => (
+                      <tr key={idx}>
+                        <td>{r.name}</td>
+                        <td>{r.clicks}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="2">No referrer data available</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </section>
@@ -244,9 +366,15 @@ export default function Dashboard() {
             <section className="top-links-section">
               <h2>Top Performing Links</h2>
               <div id="topLinksList">
-                {/* Populate dynamically based on API */}
-                <p>Link 1: www.shortlink1.com</p>
-                <p>Link 2: www.shortlink2.com</p>
+                {topLinks.length > 0 ? (
+                  topLinks.map((l, idx) => (
+                    <p key={idx}>
+                      <strong>{idx + 1}.</strong> {l.shortUrl} - <span>{l.clicks} clicks</span>
+                    </p>
+                  ))
+                ) : (
+                  <p>No link data available yet</p>
+                )}
               </div>
             </section>
 
@@ -254,10 +382,11 @@ export default function Dashboard() {
             <section className="insights-section">
               <h2>AI Insights</h2>
               <div id="aiInsights">
-                <p>Best performing link: www.shortlink1.com</p>
-                <p>Best day to share: Monday</p>
-                <p>Best platform: Facebook</p>
-                <p>Unusual traffic patterns: None</p>
+                <p><strong>Best performing link:</strong> {insights.topLink}</p>
+                <p><strong>Best day to share:</strong> {insights.bestDay}</p>
+                <p><strong>Best platform:</strong> {insights.bestPlatform}</p>
+                <p><strong>Best time:</strong> {insights.bestHour}</p>
+                <p><strong>Unusual traffic patterns:</strong> {insights.unusualPatterns}</p>
               </div>
 
               <h2>Traffic Heatmap</h2>
@@ -266,8 +395,8 @@ export default function Dashboard() {
 
             {/* Export Section */}
             <section className="export-section">
-              <button id="exportPDF">Export as PDF</button>
-              <button id="exportCSV">Export as CSV</button>
+              <button id="exportPDF" onClick={handleExportPDF}>Export as PDF</button>
+              <button id="exportCSV" onClick={handleExportCSV}>Export as CSV</button>
             </section>
           </main>
         </div>

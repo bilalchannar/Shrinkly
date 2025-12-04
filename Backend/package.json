@@ -19,7 +19,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongo-express": "^0.54.0",
     "mongoose": "^9.0.0",
-    "react-qr-code": "^2.0.18"
+    "react-qr-code": "^2.0.18",
+    "ua-parser-js": "^2.0.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

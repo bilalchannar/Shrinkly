@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 // Import routes
 const linkRoutes = require("./routes/link");
 const authRoutes = require("./routes/auth");
+const analyticsRoutes = require("./routes/analytics");
 
 const app = express();
 app.use(express.json());
@@ -19,12 +20,16 @@ mongoose
 // Use routes
 app.use("/api", linkRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
-// Redirect route for short links
+// Redirect route for short links with analytics tracking
 app.get("/r/:code", async (req, res) => {
   const Link = require("./models/Link");
+  const { recordClick } = require("./controllers/analyticsController");
+  
   try {
     const code = req.params.code;
+    const isQrScan = req.query.qr === "1";
     const link = await Link.findOne({ shortCode: code });
 
     if (!link) {
@@ -35,9 +40,12 @@ app.get("/r/:code", async (req, res) => {
       return res.status(403).send("This link has been deactivated");
     }
 
-    // Track click
+    // Track click in Link model
     link.clicks += 1;
     await link.save();
+    
+    // Record detailed analytics
+    await recordClick(link._id, code, req, isQrScan);
 
     res.redirect(link.originalUrl);
   } catch (error) {
