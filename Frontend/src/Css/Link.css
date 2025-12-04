@@ -14,14 +14,16 @@ body {
 
 /* Main content */
 .main-content {
-  margin-left: 240px;
-  width: calc(100% - 240px);
+  margin-left: 70px;
+  margin-top: 70px;
+  width: calc(100% - 70px);
+  min-height: calc(100vh - 70px);
   transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
-.sidebar.collapsed ~ .main-content {
-  margin-left: 70px;
-  width: calc(100% - 70px);
+.sidebar:not(.collapsed) ~ .main-content {
+  margin-left: 240px;
+  width: calc(100% - 240px);
 }
 
 .sidebar-footer {

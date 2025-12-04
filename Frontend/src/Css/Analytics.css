@@ -107,12 +107,11 @@ body {
   background-color: white;
   border-bottom: 1px solid #e5e7eb;
   padding: 16px 0;
-  margin-left: 240px;
-  transition: margin-left 0.3s ease;
+  width: 100%;
 }
 
-.sidebar.collapsed ~ .header {
-  margin-left: 70px;
+.analytics-page .header {
+  margin-left: 0;
 }
 
 .header-content {
@@ -142,13 +141,17 @@ body {
 
 /* ===== Main Content ===== */
 .main-content {
-  margin-left: 240px;
+  margin-left: 70px;
+  margin-top: 70px;
+  width: calc(100% - 70px);
   padding: 20px;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  min-height: calc(100vh - 70px);
 }
 
-.sidebar.collapsed ~ .main-content {
-  margin-left: 70px;
+.sidebar:not(.collapsed) ~ .main-content {
+  margin-left: 240px;
+  width: calc(100% - 240px);
 }
 
 /* ===== Performance Cards ===== */
@@ -276,12 +279,7 @@ body {
   color: #555;
   font-size: 0.9rem;
   padding: 1rem 2rem;
-  margin-left: 240px;
-  transition: margin-left 0.3s ease;
-}
-
-.sidebar.collapsed ~ .footer {
-  margin-left: 70px;
+  width: 100%;
 }
 
 /* ===== Responsive ===== */
@@ -294,6 +292,8 @@ body {
 
   .main-content {
     margin-left: 0;
+    width: 100%;
+    margin-top: 0;
   }
 
   .sidebar {
@@ -302,9 +302,9 @@ body {
     height: auto;
   }
 
-  .sidebar.collapsed ~ .main-content,
-  .sidebar.collapsed ~ .footer {
+  .sidebar:not(.collapsed) ~ .main-content {
     margin-left: 0;
+    width: 100%;
   }
 
   .performance-cards {

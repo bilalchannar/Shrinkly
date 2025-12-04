@@ -1,7 +1,7 @@
 export default function HeaderLogo() {
   return (
     <div className="header-logo">
-      <div className="logo-icon">S</div>
+      <img src="/ShrinklyBlack.png" alt="Shrinkly Logo" className="logo-image" />
     </div>
   );
 }
