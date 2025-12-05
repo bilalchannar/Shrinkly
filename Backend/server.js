@@ -7,6 +7,10 @@ const mongoose = require("mongoose");
 const linkRoutes = require("./routes/link");
 const authRoutes = require("./routes/auth");
 const analyticsRoutes = require("./routes/analytics");
+const profileRoutes = require("./routes/profile");
+const qrcodeRoutes = require("./routes/qrcode");
+const contactRoutes = require("./routes/contact");
+const dashboardRoutes = require("./routes/dashboard");
 
 const app = express();
 app.use(express.json());
@@ -21,6 +25,10 @@ mongoose
 app.use("/api", linkRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/qrcode", qrcodeRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Redirect route for short links with analytics tracking
 app.get("/r/:code", async (req, res) => {

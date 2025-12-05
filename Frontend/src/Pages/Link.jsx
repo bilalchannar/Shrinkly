@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "../Components/Sidebar";        
 import Footer from "../Components/Footer";
 import "../Css/Link.css";
-
-const API_URL = "http://localhost:5000/api";
+import { linksAPI } from "../services/api";
 
 export default function Link() {
   const [showCreateBox, setShowCreateBox] = useState(false);
@@ -58,22 +57,21 @@ export default function Link() {
   const fetchLinks = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append("search", searchQuery);
-      if (filterStatus) params.append("status", filterStatus);
-      if (filterTag) params.append("tag", filterTag);
-      if (filterDate) params.append("startDate", filterDate);
-      if (sortBy) params.append("sortBy", sortBy);
+      const params = {};
+      if (searchQuery) params.search = searchQuery;
+      if (filterStatus) params.status = filterStatus;
+      if (filterTag) params.tag = filterTag;
+      if (filterDate) params.startDate = filterDate;
+      if (sortBy) params.sortBy = sortBy;
       
       // Handle clicks filter
       if (filterClicks) {
         const [min, max] = filterClicks.split("-");
-        if (min) params.append("minClicks", min);
-        if (max && max !== "+") params.append("maxClicks", max);
+        if (min) params.minClicks = min;
+        if (max && max !== "+") params.maxClicks = max;
       }
 
-      const response = await fetch(`${API_URL}/links?${params.toString()}`);
-      const data = await response.json();
+      const data = await linksAPI.getAll(params);
 
       if (data.success) {
         setLinks(data.links);
@@ -106,17 +104,11 @@ export default function Link() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/shorten`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          originalUrl: longUrl,
-          customSlug: customSlug || undefined,
-          domain: domain
-        }),
+      const data = await linksAPI.create({
+        originalUrl: longUrl,
+        customSlug: customSlug || undefined,
+        domain: domain
       });
-
-      const data = await response.json();
 
       if (data.success) {
         setLinks([data.link, ...links]);
@@ -133,7 +125,7 @@ export default function Link() {
         setMessageType("error");
       }
     } catch (error) {
-      setMessage("Error creating link. Make sure backend is running.");
+      setMessage(error.message || "Error creating link. Make sure backend is running.");
       setMessageType("error");
     }
   };
@@ -150,10 +142,7 @@ export default function Link() {
   const handleDeleteLink = async (idx) => {
     const linkToDelete = links[idx];
     try {
-      const response = await fetch(`${API_URL}/links/${linkToDelete._id}`, {
-        method: "DELETE"
-      });
-      const data = await response.json();
+      const data = await linksAPI.delete(linkToDelete._id);
 
       if (data.success) {
         setLinks(links.filter((_, i) => i !== idx));
@@ -192,12 +181,7 @@ export default function Link() {
 
     const linkToUpdate = links[idx];
     try {
-      const response = await fetch(`${API_URL}/links/${linkToUpdate._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ originalUrl: editUrl })
-      });
-      const data = await response.json();
+      const data = await linksAPI.update(linkToUpdate._id, { originalUrl: editUrl });
 
       if (data.success) {
         const updatedLinks = [...links];
@@ -245,12 +229,7 @@ export default function Link() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/links/bulk-delete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedLinks })
-      });
-      const data = await response.json();
+      const data = await linksAPI.bulkDelete(selectedLinks);
 
       if (data.success) {
         setLinks(links.filter(link => !selectedLinks.includes(link._id)));
@@ -277,12 +256,7 @@ export default function Link() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/links/bulk-status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedLinks, status: "active" })
-      });
-      const data = await response.json();
+      const data = await linksAPI.bulkUpdateStatus(selectedLinks, "active");
 
       if (data.success) {
         fetchLinks(); // Refresh links
@@ -303,8 +277,7 @@ export default function Link() {
   // Export CSV handler
   const handleExportCSV = async () => {
     try {
-      const response = await fetch(`${API_URL}/links/export`);
-      const data = await response.json();
+      const data = await linksAPI.export();
 
       if (data.success) {
         // Convert to CSV

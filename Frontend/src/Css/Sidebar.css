@@ -1,0 +1,232 @@
+/* ===== Sidebar ===== */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 240px;
+  background-color: #fff;
+  border-right: 1px solid #e5e7eb;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  z-index: 1000;
+}
+
+.sidebar.collapsed {
+  width: 70px;
+}
+
+/* ===== Logo Section ===== */
+.sidebar-logo-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  min-height: 70px;
+}
+
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar-logo {
+  max-height: 45px;
+  max-width: 150px;
+  object-fit: contain;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  max-height: 35px;
+  max-width: 35px;
+}
+
+.sidebar.collapsed .sidebar-logo-section {
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+}
+
+.sidebar.collapsed .logo-wrapper {
+  display: none;
+}
+
+/* Toggle Button */
+.toggle-btn {
+  background: #6f42c1;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.3s ease, background 0.3s ease;
+  font-size: 1rem;
+  min-width: 36px;
+  min-height: 36px;
+  flex-shrink: 0;
+}
+
+.toggle-btn:hover {
+  transform: scale(1.05);
+  background: #5b31aa;
+}
+
+/* ===== Navigation ===== */
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.sidebar-links {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-links li {
+  margin: 0;
+  width: 100%;
+}
+
+.sidebar-links .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 1.2rem;
+  text-decoration: none;
+  color: #555;
+  font-size: 0.9rem;
+  transition: background 0.3s ease, color 0.3s ease;
+  border-left: 4px solid transparent;
+  cursor: pointer;
+}
+
+.sidebar-links .nav-link:hover,
+.sidebar-links .nav-link.active {
+  background-color: #f3f0ff;
+  color: #6f42c1;
+  border-left: 4px solid #6f42c1;
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.nav-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Collapsed state for nav links */
+.sidebar.collapsed .sidebar-links .nav-link {
+  justify-content: center;
+  padding: 0.9rem 0.5rem;
+  gap: 0;
+}
+
+.sidebar.collapsed .nav-text {
+  display: none;
+}
+
+/* ===== Footer ===== */
+.sidebar-footer {
+  padding: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-footer button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.signin-btn {
+  background: none;
+  color: #6f42c1;
+}
+
+.signin-btn:hover {
+  background-color: #f3f0ff;
+}
+
+.signup-btn {
+  background-color: #6f42c1;
+  color: white;
+}
+
+.signup-btn:hover {
+  background-color: #5b31aa;
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.btn-text {
+  white-space: nowrap;
+}
+
+/* Collapsed footer buttons */
+.sidebar.collapsed .sidebar-footer button {
+  justify-content: center;
+  padding: 0.7rem 0.5rem;
+  gap: 0;
+}
+
+.sidebar.collapsed .btn-text {
+  display: none;
+}
+
+/* ===== Main Content ===== */
+.main-content {
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  min-height: 100vh;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  padding: 1rem;
+}
+
+.sidebar.collapsed ~ .main-content {
+  margin-left: 70px;
+  width: calc(100% - 70px);
+}
+/* ===== Main Content ===== */
+.main-content {
+  margin-left: 70px;
+  margin-top: 70px;
+  width: calc(100% - 70px);
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 70px);
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+.sidebar:not(.collapsed) ~ .main-content {
+  margin-left: 240px;
+  width: calc(100% - 240px);
+}

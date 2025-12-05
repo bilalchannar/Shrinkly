@@ -1,3 +1,5 @@
+@import "./Sidebar.css";
+
 * {
   margin: 0;
   padding: 0;
@@ -10,55 +12,6 @@ body {
   background-color: #f5f5f5;
   color: #333;
   padding: 20px;
-}
-
-/* Main content */
-.main-content {
-  margin-left: 70px;
-  margin-top: 70px;
-  width: calc(100% - 70px);
-  min-height: calc(100vh - 70px);
-  transition: margin-left 0.3s ease, width 0.3s ease;
-}
-
-.sidebar:not(.collapsed) ~ .main-content {
-  margin-left: 240px;
-  width: calc(100% - 240px);
-}
-
-.sidebar-footer {
-  padding: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.sidebar-footer button {
-  width: 100%;
-  padding: 0.6rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  transition: background 0.3s ease;
-}
-
-.signin-btn {
-  background: none;
-  color: #6f42c1;
-  margin-bottom: 0.6rem;
-}
-
-.signin-btn:hover {
-  background-color: #f3f0ff;
-}
-
-.signup-btn {
-  background-color: #6f42c1;
-  color: white;
-}
-
-.signup-btn:hover {
-  background-color: #5b31aa;
 }
 
 .container {

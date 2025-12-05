@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaFacebookF, FaLinkedinIn, FaGoogle, FaGithub } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
+import { authAPI } from "../services/api";
 import "./Auth.css";
 
 const App = () => {
   const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -12,34 +15,17 @@ const App = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [rememberMe, setRememberMe] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState(null);
-  const [authToken, setAuthToken] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const savedUser = JSON.parse(localStorage.getItem("loggedInUser"));
-    const savedToken = localStorage.getItem("authToken");
-    if (savedUser && savedToken) {
-      setLoggedInUser(savedUser);
-      setAuthToken(savedToken);
+    // Redirect if already authenticated
+    if (isAuthenticated()) {
+      navigate("/home");
     }
 
     const savedEmail = localStorage.getItem("rememberedEmail");
     if (savedEmail) setEmail(savedEmail);
-  }, []);
-
-  // Helper function to make authenticated requests with JWT
-  const authenticatedFetch = (url, options = {}) => {
-    const headers = {
-      "Content-Type": "application/json",
-      ...options.headers,
-    };
-
-    if (authToken) {
-      headers.Authorization = `Bearer ${authToken}`;
-    }
-
-    return fetch(url, { ...options, headers });
-  };
+  }, [isAuthenticated, navigate]);
 
   // SIGNUP
   const handleSignupSubmit = async (e) => {
@@ -60,33 +46,21 @@ const App = () => {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    setLoading(true);
     try {
-      // Server validation (database check)
-      const res = await fetch("http://localhost:5000/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Server validation error (e.g., email already exists)
-        alert(`❌ Signup Failed: ${data.message}`);
-        setErrors({ signup: data.message });
-      } else {
-        // Success
-        alert(`✅ Signup Successful!\n\nWelcome ${data.user.username}!\n\nPlease login with your email.`);
-        setIsSignup(false);
-        setUsername("");
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-        setErrors({});
-      }
+      const data = await authAPI.signup(username, email, password);
+      alert(`✅ Signup Successful!\n\nWelcome ${data.user.username}!\n\nPlease login with your email.`);
+      setIsSignup(false);
+      setUsername("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setErrors({});
     } catch (err) {
-      console.error(err);
-      alert("❌ Server Error: Could not connect to the server. Please try again later.");
-      setErrors({ signup: "Server error. Try again later." });
+      alert(`❌ Signup Failed: ${err.message}`);
+      setErrors({ signup: err.message });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -102,48 +76,27 @@ const App = () => {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    setLoading(true);
     try {
-      // Server validation (database check)
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
+      const data = await authAPI.login(email, password);
+      
+      // Use AuthContext login
+      login(data.user, data.token);
 
-      if (!res.ok) {
-        // Invalid credentials or server error
-        alert(`❌ Login Failed: ${data.message}`);
-        setErrors({ login: data.message });
-      } else {
-        // Success - user authenticated
-        setLoggedInUser(data.user);
-        setAuthToken(data.token);
-        localStorage.setItem("loggedInUser", JSON.stringify(data.user));
-        localStorage.setItem("authToken", data.token);
+      if (rememberMe) localStorage.setItem("rememberedEmail", email);
+      else localStorage.removeItem("rememberedEmail");
 
-        if (rememberMe) localStorage.setItem("rememberedEmail", email);
-        else localStorage.removeItem("rememberedEmail");
-
-        alert(`✅ Login Successful!\n\nWelcome back, ${data.user.username}!`);
-        setErrors({});
-        
-        // Redirect to home page after 1 second
-        setTimeout(() => navigate("/home"), 1000);
-      }
+      alert(`✅ Login Successful!\n\nWelcome back, ${data.user.username}!`);
+      setErrors({});
+      
+      // Redirect to home page
+      navigate("/home");
     } catch (err) {
-      console.error(err);
-      alert("❌ Server Error: Could not connect to the server. Please try again later.");
-      setErrors({ login: "Server error. Try again later." });
+      alert(`❌ Login Failed: ${err.message}`);
+      setErrors({ login: err.message });
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("authToken");
-    setLoggedInUser(null);
-    setAuthToken(null);
-    navigate("/");
   };
 
   return (

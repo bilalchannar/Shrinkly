@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import "../Css/Sidebar.css";
 
 const Sidebar = () => {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleSidebar = () => setCollapsed(!collapsed);
 
@@ -20,37 +22,32 @@ const Sidebar = () => {
     navigate(path);
   };
 
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <>
-      {/* Header Logo Bar */}
-      <div className={`header-logo ${collapsed ? "collapsed" : ""}`}>
-        <div className="logo-container">
+    <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+      {/* Logo Section */}
+      <div className="sidebar-logo-section">
+        <div className="logo-wrapper">
           <img 
-            src={collapsed ? "/ShrinklyBlackLogo.png" : "/ShrinklyBlack.png"} 
+            src={collapsed ? "/shrinklyblacklogo.png" : "/shrinklyblack.png"} 
             alt="Shrinkly Logo" 
-            className="logo-image" 
+            className="sidebar-logo"
           />
         </div>
+        <button className="toggle-btn" onClick={toggleSidebar}>
+          {collapsed ? "→" : "←"}
+        </button>
       </div>
 
-      {/* Sidebar */}
-      <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
-        {/* Toggle Button */}
-        <div className="sidebar-toggle">
-          <button className="toggle-btn" onClick={toggleSidebar}>
-            {collapsed ? "☰" : "✕"}
-          </button>
-        </div>
-
-        {/* Links */}
+      {/* Navigation Links */}
+      <nav className="sidebar-nav">
         <ul className="sidebar-links">
           {pages.map((page, index) => (
             <li key={index}>
               <a 
                 onClick={() => handleNavigate(page.path)} 
-                className="nav-link"
-                style={{ cursor: "pointer" }}
-                title={collapsed ? page.name : ""}
+                className={`nav-link ${isActive(page.path) ? "active" : ""}`}
               >
                 <span className="nav-icon">{page.icon}</span>
                 <span className="nav-text">{page.name}</span>
@@ -58,20 +55,20 @@ const Sidebar = () => {
             </li>
           ))}
         </ul>
+      </nav>
 
-        {/* Footer Buttons */}
-        <div className="sidebar-footer">
-          <button className="signin-btn" onClick={() => handleNavigate("/")} title={collapsed ? "Sign In" : ""}>
-            <span className="btn-icon">🔑</span>
-            <span className="btn-text">Sign In</span>
-          </button>
-          <button className="signup-btn" onClick={() => handleNavigate("/")} title={collapsed ? "Sign Up" : ""}>
-            <span className="btn-icon">📝</span>
-            <span className="btn-text">Sign Up</span>
-          </button>
-        </div>
+      {/* Footer Buttons */}
+      <div className="sidebar-footer">
+        <button className="signin-btn" onClick={() => handleNavigate("/")}>
+          <span className="btn-icon">🔑</span>
+          <span className="btn-text">Sign In</span>
+        </button>
+        <button className="signup-btn" onClick={() => handleNavigate("/")}>
+          <span className="btn-icon">📝</span>
+          <span className="btn-text">Sign Up</span>
+        </button>
       </div>
-    </>
+    </div>
   );
 };
 

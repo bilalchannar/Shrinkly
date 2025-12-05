@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import "../Css/Analytics.css";  // Ensure your styling for the analytics page is here
-import Sidebar from "../Components/Sidebar";  // Assuming Sidebar is in the Components folder
-import Footer from "../Components/Footer";  // Assuming Footer is in the Components folder
-import { Line, Pie } from "react-chartjs-2";  // For charts, replace with any other charting library if needed
-import { Chart as ChartJS } from "chart.js/auto";  // Import Chart.js if using it
-
-const API_URL = "http://localhost:5000/api";
+import "../Css/Analytics.css";
+import Sidebar from "../Components/Sidebar";
+import Footer from "../Components/Footer";
+import { Line, Pie } from "react-chartjs-2";
+import { Chart as ChartJS } from "chart.js/auto";
+import { linksAPI, analyticsAPI } from "../services/api";
 
 export default function Dashboard() {
   const [link, setLink] = useState("");  // Selected link for analytics
@@ -48,8 +47,7 @@ export default function Dashboard() {
 
   const fetchLinks = async () => {
     try {
-      const response = await fetch(`${API_URL}/links`);
-      const data = await response.json();
+      const data = await linksAPI.getAll();
       if (data.success) {
         setLinks(data.links);
       }
@@ -61,16 +59,16 @@ export default function Dashboard() {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (startDate) params.append("startDate", startDate);
-      if (endDate) params.append("endDate", endDate);
+      const params = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
 
-      let url = link 
-        ? `${API_URL}/analytics/link/${link}?${params.toString()}`
-        : `${API_URL}/analytics?${params.toString()}`;
-
-      const response = await fetch(url);
-      const data = await response.json();
+      let data;
+      if (link) {
+        data = await analyticsAPI.getForLink(link, params);
+      } else {
+        data = await analyticsAPI.getOverall(params);
+      }
 
       if (data.success) {
         const { analytics } = data;
@@ -97,11 +95,10 @@ export default function Dashboard() {
 
   const fetchInsights = async () => {
     try {
-      const params = new URLSearchParams();
-      if (link) params.append("linkId", link);
+      const params = {};
+      if (link) params.linkId = link;
 
-      const response = await fetch(`${API_URL}/analytics/insights?${params.toString()}`);
-      const data = await response.json();
+      const data = await analyticsAPI.getInsights(params);
 
       if (data.success) {
         setInsights(data.insights);
@@ -151,13 +148,12 @@ export default function Dashboard() {
   // Handle exports
   const handleExportCSV = async () => {
     try {
-      const params = new URLSearchParams();
-      if (link) params.append("linkId", link);
-      if (startDate) params.append("startDate", startDate);
-      if (endDate) params.append("endDate", endDate);
+      const params = {};
+      if (link) params.linkId = link;
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
 
-      const response = await fetch(`${API_URL}/analytics/export?${params.toString()}`);
-      const data = await response.json();
+      const data = await analyticsAPI.export(params);
 
       if (data.success) {
         const headers = ["Short URL", "Original URL", "Device", "Browser", "OS", "Country", "Referrer", "QR Scan", "Clicked At"];

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "../Css/Home.css";
 import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
+import { linksAPI } from "../services/api";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -59,17 +60,7 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/shorten", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: inputUrl.trim() })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to shorten URL");
-      }
+      const data = await linksAPI.create({ url: inputUrl.trim() });
 
       if (data.success && data.short) {
         setShortUrl(data.short);

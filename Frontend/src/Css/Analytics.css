@@ -1,4 +1,6 @@
 /* ===== Reset & Base ===== */
+@import "./Sidebar.css";
+
 * {
   margin: 0;
   padding: 0;
@@ -14,92 +16,6 @@ body {
 /* ===== Container ===== */
 .container {
   width: 100%;
-}
-
-/* ===== Sidebar ===== */
-.sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  height: 100vh;
-  width: 240px;
-  background-color: #fff;
-  border-right: 1px solid #e5e7eb;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: width 0.3s ease;
-  z-index: 1000;
-}
-
-.sidebar.collapsed {
-  width: 70px;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #6f42c1, #8c5edc);
-  color: #fff;
-  font-weight: bold;
-  font-size: 1.2rem;
-  position: relative;
-}
-
-.logo-icon {
-  background: #fff;
-  color: #6f42c1;
-  border-radius: 6px;
-  font-weight: 700;
-  padding: 0.3rem 0.6rem;
-}
-
-.toggle-btn {
-  position: absolute;
-  top: 1rem;
-  right: -40px;
-  background: #6f42c1;
-  color: #fff;
-  border: none;
-  padding: 0.5rem 0.7rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
-
-.toggle-btn:hover {
-  transform: scale(1.1);
-}
-
-.sidebar-links {
-  flex: 1;
-  padding: 1rem 0;
-  list-style: none;
-}
-
-.sidebar-links li {
-  margin: 0.5rem 0;
-}
-
-.sidebar-links a {
-  display: block;
-  padding: 0.8rem 1.5rem;
-  text-decoration: none;
-  color: #555;
-  font-size: 0.95rem;
-  transition: background 0.3s ease, color 0.3s ease;
-  border-left: 4px solid transparent;
-}
-
-.sidebar-links a.active,
-.sidebar-links a:hover {
-  background-color: #f3f0ff;
-  color: #6f42c1;
-  border-left: 4px solid #6f42c1;
-  font-weight: 600;
 }
 
 /* ===== Header ===== */
@@ -137,21 +53,6 @@ body {
   border-radius: 6px;
   border: 1px solid #e5e7eb;
   font-size: 14px;
-}
-
-/* ===== Main Content ===== */
-.main-content {
-  margin-left: 70px;
-  margin-top: 70px;
-  width: calc(100% - 70px);
-  padding: 20px;
-  transition: margin-left 0.3s ease, width 0.3s ease;
-  min-height: calc(100vh - 70px);
-}
-
-.sidebar:not(.collapsed) ~ .main-content {
-  margin-left: 240px;
-  width: calc(100% - 240px);
 }
 
 /* ===== Performance Cards ===== */
