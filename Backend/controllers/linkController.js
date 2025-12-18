@@ -1,5 +1,6 @@
 const Link = require("../models/Link");
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 
 // Create a new short link
 exports.createShortLink = async (req, res) => {
@@ -28,12 +29,16 @@ exports.createShortLink = async (req, res) => {
       }
     }
 
+    // Use environment variable for base URL, fallback to localhost for development
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+
     const newLink = new Link({
       originalUrl,
       shortCode,
       customSlug: customSlug || null,
       domain: domain || "shrinkly.link",
-      tags: tags || ""
+      tags: tags || "",
+      userId: req.userId
     });
 
     await newLink.save();
@@ -41,10 +46,11 @@ exports.createShortLink = async (req, res) => {
     return res.json({
       success: true,
       short: shortCode,
+      shortUrl: `${baseUrl}/r/${shortCode}`,
       link: {
         _id: newLink._id,
         original: newLink.originalUrl,
-        short: `${newLink.domain}/${shortCode}`,
+        short: `${baseUrl}/r/${shortCode}`,
         clicks: newLink.clicks,
         date: newLink.createdAt.toISOString().split("T")[0],
         status: newLink.status,
@@ -62,7 +68,7 @@ exports.getAllLinks = async (req, res) => {
   try {
     const { search, status, sortBy, tag, minClicks, maxClicks, startDate, endDate } = req.query;
 
-    let query = {};
+    let query = { userId: req.userId };
 
     // Search filter
     if (search) {
@@ -71,6 +77,7 @@ exports.getAllLinks = async (req, res) => {
         { shortCode: { $regex: search, $options: "i" } },
         { tags: { $regex: search, $options: "i" } }
       ];
+      query.userId = req.userId;
     }
 
     // Status filter
@@ -104,10 +111,11 @@ exports.getAllLinks = async (req, res) => {
 
     const links = await Link.find(query).sort(sortOptions);
 
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
     const formattedLinks = links.map(link => ({
       _id: link._id,
       original: link.originalUrl,
-      short: `${link.domain}/${link.shortCode}`,
+      short: `${baseUrl}/r/${link.shortCode}`,
       shortCode: link.shortCode,
       clicks: link.clicks,
       date: link.createdAt.toISOString().split("T")[0],
@@ -126,18 +134,19 @@ exports.getAllLinks = async (req, res) => {
 exports.getLinkById = async (req, res) => {
   try {
     const { id } = req.params;
-    const link = await Link.findById(id);
+    const link = await Link.findOne({ _id: id, userId: req.userId });
 
     if (!link) {
       return res.status(404).json({ success: false, message: "Link not found" });
     }
 
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
     return res.json({
       success: true,
       link: {
         _id: link._id,
         original: link.originalUrl,
-        short: `${link.domain}/${link.shortCode}`,
+        short: `${baseUrl}/r/${link.shortCode}`,
         shortCode: link.shortCode,
         clicks: link.clicks,
         date: link.createdAt.toISOString().split("T")[0],
@@ -157,7 +166,7 @@ exports.updateLink = async (req, res) => {
     const { id } = req.params;
     const { originalUrl, status, tags } = req.body;
 
-    const link = await Link.findById(id);
+    const link = await Link.findOne({ _id: id, userId: req.userId });
     if (!link) {
       return res.status(404).json({ success: false, message: "Link not found" });
     }
@@ -177,13 +186,14 @@ exports.updateLink = async (req, res) => {
 
     await link.save();
 
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
     return res.json({
       success: true,
       message: "Link updated successfully",
       link: {
         _id: link._id,
         original: link.originalUrl,
-        short: `${link.domain}/${link.shortCode}`,
+        short: `${baseUrl}/r/${link.shortCode}`,
         shortCode: link.shortCode,
         clicks: link.clicks,
         date: link.createdAt.toISOString().split("T")[0],
@@ -201,7 +211,7 @@ exports.updateLink = async (req, res) => {
 exports.deleteLink = async (req, res) => {
   try {
     const { id } = req.params;
-    const link = await Link.findByIdAndDelete(id);
+    const link = await Link.findOneAndDelete({ _id: id, userId: req.userId });
 
     if (!link) {
       return res.status(404).json({ success: false, message: "Link not found" });
@@ -223,7 +233,7 @@ exports.bulkDeleteLinks = async (req, res) => {
       return res.status(400).json({ success: false, message: "No link IDs provided" });
     }
 
-    const result = await Link.deleteMany({ _id: { $in: ids } });
+    const result = await Link.deleteMany({ _id: { $in: ids }, userId: req.userId });
 
     return res.json({
       success: true,
@@ -249,7 +259,7 @@ exports.bulkUpdateStatus = async (req, res) => {
     }
 
     const result = await Link.updateMany(
-      { _id: { $in: ids } },
+      { _id: { $in: ids }, userId: req.userId },
       { $set: { status } }
     );
 
@@ -292,10 +302,12 @@ exports.redirectToOriginal = async (req, res) => {
 // Get link statistics
 exports.getLinkStats = async (req, res) => {
   try {
-    const totalLinks = await Link.countDocuments();
-    const activeLinks = await Link.countDocuments({ status: "active" });
-    const inactiveLinks = await Link.countDocuments({ status: "inactive" });
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const totalLinks = await Link.countDocuments({ userId: req.userId });
+    const activeLinks = await Link.countDocuments({ userId: req.userId, status: "active" });
+    const inactiveLinks = await Link.countDocuments({ userId: req.userId, status: "inactive" });
     const totalClicks = await Link.aggregate([
+      { $match: { userId: userId } },
       { $group: { _id: null, total: { $sum: "$clicks" } } }
     ]);
 
@@ -317,11 +329,12 @@ exports.getLinkStats = async (req, res) => {
 // Export links to CSV format
 exports.exportLinks = async (req, res) => {
   try {
-    const links = await Link.find().sort({ createdAt: -1 });
+    const links = await Link.find({ userId: req.userId }).sort({ createdAt: -1 });
 
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
     const csvData = links.map(link => ({
       originalUrl: link.originalUrl,
-      shortUrl: `${link.domain}/${link.shortCode}`,
+      shortUrl: `${baseUrl}/r/${link.shortCode}`,
       clicks: link.clicks,
       status: link.status,
       tags: link.tags,

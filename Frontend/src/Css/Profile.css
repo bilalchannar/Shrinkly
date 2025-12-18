@@ -352,6 +352,7 @@
   padding: 1.5rem;
   border: 1px solid #fecaca;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 2rem;
 }
 
 .danger-zone h3 {

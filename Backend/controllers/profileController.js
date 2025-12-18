@@ -17,13 +17,18 @@ exports.getProfile = async (req, res) => {
       });
     }
 
+    // Convert userId to ObjectId for proper querying
+    const userObjectId = new mongoose.Types.ObjectId(req.userId);
+
     // Get user statistics
-    const totalLinks = await Link.countDocuments({ userId: req.userId });
+    const totalLinks = await Link.countDocuments({ userId: userObjectId });
     const totalClicks = await Link.aggregate([
-      { $match: { userId: user._id } },
+      { $match: { userId: userObjectId } },
       { $group: { _id: null, total: { $sum: "$clicks" } } }
     ]);
-    const totalQRCodes = await QRCode.countDocuments({ userId: req.userId });
+    const totalQRCodes = await QRCode.countDocuments({ userId: userObjectId });
+
+    console.log("Profile stats for user:", req.userId, { totalLinks, totalClicks: totalClicks[0]?.total || 0, totalQRCodes });
 
     return res.json({
       success: true,

@@ -96,7 +96,8 @@ exports.getLinkAnalytics = async (req, res) => {
       if (endDate) dateFilter.clickedAt.$lte = new Date(endDate + "T23:59:59.999Z");
     }
     
-    const link = await Link.findById(linkId);
+    // Verify link belongs to user
+    const link = await Link.findOne({ _id: linkId, userId: req.userId });
     if (!link) {
       return res.status(404).json({ success: false, message: "Link not found" });
     }
@@ -183,7 +184,31 @@ exports.getOverallAnalytics = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    let dateFilter = {};
+    // Get user's links first
+    const userLinks = await Link.find({ userId: req.userId }).select("_id");
+    const userLinkIds = userLinks.map(l => l._id);
+    
+    if (userLinkIds.length === 0) {
+      return res.json({
+        success: true,
+        analytics: {
+          totalClicks: 0,
+          uniqueVisitors: 0,
+          qrScans: 0,
+          deviceCount: 0,
+          countryCount: 0,
+          referrerCount: 0,
+          devices: [],
+          browsers: [],
+          countries: [],
+          referrers: [],
+          clickTrends: [],
+          topLinks: []
+        }
+      });
+    }
+    
+    let dateFilter = { linkId: { $in: userLinkIds } };
     if (startDate || endDate) {
       dateFilter.clickedAt = {};
       if (startDate) dateFilter.clickedAt.$gte = new Date(startDate);
@@ -293,8 +318,19 @@ exports.getHeatmapData = async (req, res) => {
   try {
     const { linkId, startDate, endDate } = req.query;
     
-    let query = {};
-    if (linkId) query.linkId = linkId;
+    // Get user's links
+    const userLinks = await Link.find({ userId: req.userId }).select("_id");
+    const userLinkIds = userLinks.map(l => l._id);
+    
+    let query = { linkId: { $in: userLinkIds } };
+    if (linkId) {
+      // Verify the specific link belongs to user
+      const link = await Link.findOne({ _id: linkId, userId: req.userId });
+      if (!link) {
+        return res.status(404).json({ success: false, message: "Link not found" });
+      }
+      query.linkId = linkId;
+    }
     if (startDate || endDate) {
       query.clickedAt = {};
       if (startDate) query.clickedAt.$gte = new Date(startDate);
@@ -336,8 +372,19 @@ exports.getInsights = async (req, res) => {
   try {
     const { linkId } = req.query;
     
-    let query = {};
-    if (linkId) query.linkId = linkId;
+    // Get user's links
+    const userLinks = await Link.find({ userId: req.userId }).select("_id");
+    const userLinkIds = userLinks.map(l => l._id);
+    
+    let query = { linkId: { $in: userLinkIds } };
+    if (linkId) {
+      // Verify the specific link belongs to user
+      const link = await Link.findOne({ _id: linkId, userId: req.userId });
+      if (!link) {
+        return res.status(404).json({ success: false, message: "Link not found" });
+      }
+      query.linkId = linkId;
+    }
     
     // Get best performing day
     const bestDay = await Analytics.aggregate([
@@ -415,8 +462,19 @@ exports.exportAnalytics = async (req, res) => {
   try {
     const { linkId, startDate, endDate, format } = req.query;
     
-    let query = {};
-    if (linkId) query.linkId = linkId;
+    // Get user's links
+    const userLinks = await Link.find({ userId: req.userId }).select("_id");
+    const userLinkIds = userLinks.map(l => l._id);
+    
+    let query = { linkId: { $in: userLinkIds } };
+    if (linkId) {
+      // Verify the specific link belongs to user
+      const link = await Link.findOne({ _id: linkId, userId: req.userId });
+      if (!link) {
+        return res.status(404).json({ success: false, message: "Link not found" });
+      }
+      query.linkId = linkId;
+    }
     if (startDate || endDate) {
       query.clickedAt = {};
       if (startDate) query.clickedAt.$gte = new Date(startDate);

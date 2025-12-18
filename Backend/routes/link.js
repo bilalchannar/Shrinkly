@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const { auth, optionalAuth } = require("../middleware/auth");
 const {
   createShortLink,
   getAllLinks,
@@ -12,20 +13,20 @@ const {
   exportLinks
 } = require("../controllers/linkController");
 
-// Link CRUD operations
-router.post("/shorten", createShortLink);
-router.get("/links", getAllLinks);
-router.get("/links/stats", getLinkStats);
-router.get("/links/export", exportLinks);
-router.get("/links/:id", getLinkById);
-router.put("/links/:id", updateLink);
-router.delete("/links/:id", deleteLink);
+// Link CRUD operations (require auth)
+router.post("/shorten", auth, createShortLink);
+router.get("/links", auth, getAllLinks);
+router.get("/links/stats", auth, getLinkStats);
+router.get("/links/export", auth, exportLinks);
+router.get("/links/:id", auth, getLinkById);
+router.put("/links/:id", auth, updateLink);
+router.delete("/links/:id", auth, deleteLink);
 
-// Bulk operations
-router.post("/links/bulk-delete", bulkDeleteLinks);
-router.post("/links/bulk-status", bulkUpdateStatus);
+// Bulk operations (require auth)
+router.post("/links/bulk-delete", auth, bulkDeleteLinks);
+router.post("/links/bulk-status", auth, bulkUpdateStatus);
 
-// Redirect route (should be last to avoid conflicts)
+// Redirect route (should be last to avoid conflicts) - no auth needed
 router.get("/:code", redirectToOriginal);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
 import { contactAPI } from "../services/api";
@@ -13,6 +13,24 @@ export default function Contact() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [contacts, setContacts] = useState([]);
+  const [showContacts, setShowContacts] = useState(false);
+
+  // Fetch contacts on mount
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+
+  const fetchContacts = async () => {
+    try {
+      const data = await contactAPI.getAll();
+      if (data.success) {
+        setContacts(data.contacts || []);
+      }
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -52,6 +70,7 @@ export default function Contact() {
       if (data.success) {
         showMessage("success", "Thank you for contacting us! We'll get back to you soon.");
         setFormData({ fullName: "", email: "", phone: "", message: "" });
+        fetchContacts(); // Refresh contacts list
       }
     } catch (error) {
       showMessage("error", error.message || "Failed to send message. Please try again.");
@@ -188,6 +207,79 @@ export default function Contact() {
               </div>
             </form>
           </div>
+        </div>
+
+        {/* Submitted Contacts Section */}
+        <div style={{ padding: "0 20px", marginBottom: "20px" }}>
+          <button 
+            onClick={() => setShowContacts(!showContacts)}
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#6f42c1",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "500"
+            }}
+          >
+            {showContacts ? "Hide" : "Show"} My Submissions ({contacts.length})
+          </button>
+
+          {showContacts && contacts.length > 0 && (
+            <div style={{
+              marginTop: "20px",
+              backgroundColor: "#fff",
+              borderRadius: "12px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              overflow: "hidden"
+            }}>
+              <div style={{
+                padding: "16px 20px",
+                backgroundColor: "#f8f9fa",
+                borderBottom: "1px solid #eee",
+                fontWeight: "600",
+                color: "#333"
+              }}>
+                📋 Your Contact Submissions
+              </div>
+              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                {contacts.map((contact, idx) => (
+                  <div key={contact._id || idx} style={{
+                    padding: "16px 20px",
+                    borderBottom: "1px solid #eee"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <strong style={{ color: "#6f42c1" }}>{contact.fullName}</strong>
+                      <span style={{ 
+                        fontSize: "12px", 
+                        padding: "4px 8px", 
+                        borderRadius: "4px",
+                        backgroundColor: contact.status === "resolved" ? "#d4edda" : contact.status === "in-progress" ? "#fff3cd" : "#e9ecef",
+                        color: contact.status === "resolved" ? "#155724" : contact.status === "in-progress" ? "#856404" : "#495057"
+                      }}>
+                        {contact.status || "pending"}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: "13px", color: "#666", margin: "4px 0" }}>📧 {contact.email}</p>
+                    {contact.phone && <p style={{ fontSize: "13px", color: "#666", margin: "4px 0" }}>📞 {contact.phone}</p>}
+                    <p style={{ fontSize: "14px", color: "#333", margin: "8px 0", padding: "10px", backgroundColor: "#f8f9fa", borderRadius: "6px" }}>
+                      {contact.message}
+                    </p>
+                    <p style={{ fontSize: "11px", color: "#999", margin: "4px 0" }}>
+                      Submitted: {new Date(contact.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showContacts && contacts.length === 0 && (
+            <div style={{ marginTop: "20px", padding: "30px", textAlign: "center", color: "#666", backgroundColor: "#f8f9fa", borderRadius: "12px" }}>
+              No submissions yet. Fill out the form above to submit a contact request.
+            </div>
+          )}
         </div>
 
         <Footer />

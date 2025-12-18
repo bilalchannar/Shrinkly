@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const { auth } = require("../middleware/auth");
 const {
   getLinkAnalytics,
   getOverallAnalytics,
@@ -6,6 +7,9 @@ const {
   getInsights,
   exportAnalytics
 } = require("../controllers/analyticsController");
+
+// All analytics routes require authentication
+router.use(auth);
 
 // Get overall analytics (all links)
 router.get("/", getOverallAnalytics);

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { authAPI } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -8,15 +9,34 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing auth on mount
-    const savedUser = localStorage.getItem("loggedInUser");
-    const savedToken = localStorage.getItem("authToken");
+    // Check for existing auth on mount and validate token
+    const validateAuth = async () => {
+      const savedUser = localStorage.getItem("loggedInUser");
+      const savedToken = localStorage.getItem("authToken");
+      
+      if (savedUser && savedToken) {
+        try {
+          // Validate token by calling /auth/me
+          const data = await authAPI.getCurrentUser();
+          if (data.user) {
+            setUser(data.user);
+            setToken(savedToken);
+          } else {
+            // Token invalid, clear storage
+            localStorage.removeItem("loggedInUser");
+            localStorage.removeItem("authToken");
+          }
+        } catch (error) {
+          // Token invalid or expired, clear storage
+          console.log("Token validation failed, clearing auth");
+          localStorage.removeItem("loggedInUser");
+          localStorage.removeItem("authToken");
+        }
+      }
+      setLoading(false);
+    };
     
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      setToken(savedToken);
-    }
-    setLoading(false);
+    validateAuth();
   }, []);
 
   const login = (userData, authToken) => {

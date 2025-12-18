@@ -1,19 +1,25 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "../Css/Sidebar.css";
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout, isAuthenticated } = useAuth();
 
   const toggleSidebar = () => setCollapsed(!collapsed);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   const pages = [
     { name: "Home", icon: "🏠", path: "/home" },
     { name: "Link Management", icon: "🔗", path: "/link" },
     { name: "QR Code", icon: "📱", path: "/qrcode" },
-    { name: "Analytics", icon: "📊", path: "/analytics" },
     { name: "Contact", icon: "📞", path: "/contact" },
     { name: "Profile", icon: "👤", path: "/profile" },
   ];
@@ -59,14 +65,23 @@ const Sidebar = () => {
 
       {/* Footer Buttons */}
       <div className="sidebar-footer">
-        <button className="signin-btn" onClick={() => handleNavigate("/")}>
-          <span className="btn-icon">🔑</span>
-          <span className="btn-text">Sign In</span>
-        </button>
-        <button className="signup-btn" onClick={() => handleNavigate("/")}>
-          <span className="btn-icon">📝</span>
-          <span className="btn-text">Sign Up</span>
-        </button>
+        {isAuthenticated() ? (
+          <button className="logout-btn" onClick={handleLogout}>
+            <span className="btn-icon">🚪</span>
+            <span className="btn-text">Logout</span>
+          </button>
+        ) : (
+          <>
+            <button className="signin-btn" onClick={() => handleNavigate("/")}>
+              <span className="btn-icon">🔑</span>
+              <span className="btn-text">Sign In</span>
+            </button>
+            <button className="signup-btn" onClick={() => handleNavigate("/")}>
+              <span className="btn-icon">📝</span>
+              <span className="btn-text">Sign Up</span>
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

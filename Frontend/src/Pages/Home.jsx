@@ -60,10 +60,13 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const data = await linksAPI.create({ url: inputUrl.trim() });
+      const data = await linksAPI.create({ originalUrl: inputUrl.trim() });
+      console.log("API Response:", data);
 
-      if (data.success && data.short) {
-        setShortUrl(data.short);
+      if (data.success) {
+        // Use shortUrl or construct from short code
+        const url = data.shortUrl || data.link?.short || `http://localhost:5000/r/${data.short}`;
+        setShortUrl(url);
         setSuccess(true);
         setInputUrl("");
 
@@ -72,11 +75,11 @@ export default function Home() {
           setSuccess(false);
         }, 5000);
       } else {
-        throw new Error(data.error || "Invalid response from server");
+        throw new Error(data.message || data.error || "Failed to create link");
       }
     } catch (err) {
       setError(`❌ ${err.message || "Failed to create short link. Please try again."}`);
-      console.error(err);
+      console.error("Link creation error:", err);
     } finally {
       setLoading(false);
     }

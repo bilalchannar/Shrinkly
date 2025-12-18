@@ -13,14 +13,15 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   
+  // Initialize formData with user from AuthContext
   const [formData, setFormData] = useState({
-    displayName: "",
-    username: "",
-    bio: "",
-    email: "",
-    phone: "",
-    company: "",
-    location: ""
+    displayName: user?.displayName || user?.username || "",
+    username: user?.username || "",
+    bio: user?.bio || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    company: user?.company || "",
+    location: user?.location || ""
   });
 
   const [stats, setStats] = useState({
@@ -46,6 +47,8 @@ export default function Profile() {
     try {
       setLoading(true);
       const data = await profileAPI.getProfile();
+      console.log("Profile API response:", data);
+      console.log("Stats received:", data.stats);
       if (data.success) {
         setFormData({
           displayName: data.user.displayName || "",
@@ -56,10 +59,44 @@ export default function Profile() {
           company: data.user.company || "",
           location: data.user.location || ""
         });
-        setStats(data.stats);
+        // Make sure we're setting stats correctly
+        if (data.stats) {
+          setStats({
+            totalLinks: data.stats.totalLinks || 0,
+            totalClicks: data.stats.totalClicks || 0,
+            totalQRCodes: data.stats.totalQRCodes || 0
+          });
+        }
+      } else {
+        // Fallback to user from AuthContext
+        if (user) {
+          setFormData({
+            displayName: user.displayName || user.username || "",
+            username: user.username || "",
+            bio: user.bio || "",
+            email: user.email || "",
+            phone: user.phone || "",
+            company: user.company || "",
+            location: user.location || ""
+          });
+        }
+        showMessage("error", data.message || "Failed to load profile");
       }
     } catch (error) {
-      showMessage("error", error.message);
+      console.error("Profile fetch error:", error);
+      // Fallback to user from AuthContext
+      if (user) {
+        setFormData({
+          displayName: user.displayName || user.username || "",
+          username: user.username || "",
+          bio: user.bio || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          company: user.company || "",
+          location: user.location || ""
+        });
+      }
+      showMessage("error", error.message || "Failed to load profile");
     } finally {
       setLoading(false);
     }
@@ -165,7 +202,7 @@ export default function Profile() {
     return num;
   };
 
-  if (loading) {
+  if (loading && !formData.email) {
     return (
       <>
         <Sidebar />

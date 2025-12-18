@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import QRCode from "react-qr-code";
 import "../Css/QrCode.css";
 import Sidebar from "../Components/Sidebar";
@@ -6,6 +7,7 @@ import Footer from "../Components/Footer";
 import { qrCodeAPI } from "../services/api";
 
 const QRCodePage = () => {
+  const [searchParams] = useSearchParams();
   const [destinationUrl, setDestinationUrl] = useState('');
   const [title, setTitle] = useState('');
   const [qrColor, setQrColor] = useState('#6f42c1');
@@ -17,10 +19,16 @@ const QRCodePage = () => {
   const [savedQRCodes, setSavedQRCodes] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Fetch saved QR codes on mount
+  // Fetch saved QR codes on mount and check for URL param
   useEffect(() => {
     fetchQRCodes();
-  }, []);
+    
+    // Pre-fill URL from query params if provided
+    const urlParam = searchParams.get('url');
+    if (urlParam) {
+      setDestinationUrl(urlParam);
+    }
+  }, [searchParams]);
 
   const fetchQRCodes = async () => {
     try {
@@ -367,10 +375,10 @@ const QRCodePage = () => {
               </button>
               <button 
                 className="btn-primary"
-                onClick={handleSaveQRCode}
-                disabled={!destinationUrl.trim() || saving}
+                onClick={() => handleDownload('png')}
+                disabled={!destinationUrl.trim()}
               >
-                {saving ? 'Saving...' : 'Save QR Code'}
+                Save QR Code
               </button>
             </div>
           </div>

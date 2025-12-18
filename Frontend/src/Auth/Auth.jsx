@@ -7,7 +7,7 @@ import "./Auth.css";
 
 const App = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -18,14 +18,14 @@ const App = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Redirect if already authenticated
-    if (isAuthenticated()) {
+    // Wait for auth loading to complete before redirecting
+    if (!authLoading && isAuthenticated()) {
       navigate("/home");
     }
 
     const savedEmail = localStorage.getItem("rememberedEmail");
     if (savedEmail) setEmail(savedEmail);
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, authLoading]);
 
   // SIGNUP
   const handleSignupSubmit = async (e) => {
@@ -98,6 +98,21 @@ const App = () => {
       setLoading(false);
     }
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        height: "100vh",
+        backgroundColor: "#f8f9fa"
+      }}>
+        <p style={{ color: "#6c757d" }}>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="root-container">

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../Components/Sidebar";        
 import Footer from "../Components/Footer";
 import "../Css/Link.css";
 import { linksAPI } from "../services/api";
 
 export default function Link() {
+  const navigate = useNavigate();
   const [showCreateBox, setShowCreateBox] = useState(false);
   const [showLinkInfo, setShowLinkInfo] = useState(false);
   const [shortLink, setShortLink] = useState("");
   const [longUrl, setLongUrl] = useState("");
   const [customSlug, setCustomSlug] = useState("");
-  const [domain, setDomain] = useState("shrinkly.link");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState(""); // 'success' or 'error'
   const [editingIdx, setEditingIdx] = useState(null);
@@ -106,8 +107,7 @@ export default function Link() {
     try {
       const data = await linksAPI.create({
         originalUrl: longUrl,
-        customSlug: customSlug || undefined,
-        domain: domain
+        customSlug: customSlug || undefined
       });
 
       if (data.success) {
@@ -356,17 +356,6 @@ export default function Link() {
                   onChange={(e) => setCustomSlug(e.target.value)}
                 />
               </div>
-              <div className="input-group">
-                <label htmlFor="domainSelect">Domain</label>
-                <select 
-                  id="domainSelect"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                >
-                  <option value="shrinkly.link">shrinkly.link</option>
-                  <option value="shrink.ly">shrink.ly</option>
-                </select>
-              </div>
               <button 
                 className="btn-primary" 
                 style={{ backgroundColor: "#28a745" }}
@@ -384,7 +373,12 @@ export default function Link() {
                   >
                     Copy
                   </button>
-                  <button className="btn-secondary">QR</button>
+                  <button 
+                    className="btn-secondary"
+                    onClick={() => navigate(`/qrcode?url=${encodeURIComponent(shortLink)}`)}
+                  >
+                    QR
+                  </button>
                 </div>
               )}
             </div>
