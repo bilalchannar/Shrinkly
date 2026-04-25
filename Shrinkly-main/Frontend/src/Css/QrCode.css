@@ -1,0 +1,286 @@
+/* ===== QR Code Page Layout ===== */
+.qr-page {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.qr-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 2rem;
+}
+
+/* ===== Premium Header ===== */
+.qr-header {
+  background: white;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.qr-header-left h1 {
+  font-size: 1.75rem;
+  color: #1a1a2e;
+  margin: 0 0 0.25rem 0;
+  font-weight: 700;
+}
+
+.qr-header-left p {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.btn-history-toggle {
+  padding: 0.8rem 1.5rem;
+  background: #fcfcff;
+  color: #512da8;
+  border: 1.5px solid #dcd3f5;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-history-toggle:hover {
+  background: #f6f3ff;
+  transform: translateY(-1px);
+}
+
+/* ===== QR Cards ===== */
+.qr-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  border: 1px solid #eef0f7;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  margin-bottom: 2rem;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 1rem;
+}
+
+.card-header h2 {
+  font-size: 1.1rem;
+  color: #1a1a2e;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #512da8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  border: 1.5px solid #eef0f7;
+  border-radius: 10px;
+  background: #fcfcff;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  border-color: #512da8;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(81, 45, 168, 0.1);
+  outline: none;
+}
+
+/* Customizer Grid */
+.customize-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: #fcfcff;
+  border: 1.5px solid #eef0f7;
+  border-radius: 10px;
+}
+
+.color-input {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-value {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Range Slider */
+.range-input {
+  width: 100%;
+  accent-color: #512da8;
+}
+
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.5rem;
+}
+
+/* ===== Preview Card ===== */
+.preview-card {
+  text-align: center;
+  position: sticky;
+  top: 100px;
+}
+
+.qr-preview-container {
+  background: #fcfcff;
+  padding: 2.5rem;
+  border-radius: 16px;
+  border: 2px dashed #eef0f7;
+  display: inline-flex;
+  margin-bottom: 1.5rem;
+}
+
+.qr-placeholder {
+  color: #999;
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+  opacity: 0.3;
+}
+
+.qr-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.stat {
+  background: #fcfcff;
+  padding: 0.75rem;
+  border-radius: 10px;
+}
+
+.stat-label { font-size: 0.7rem; color: #999; text-transform: uppercase; display: block; }
+.stat-value { font-weight: 700; color: #512da8; font-size: 0.9rem; }
+
+/* Action Buttons */
+.download-btn {
+  width: 100%;
+  padding: 1rem;
+  background: #512da8;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.download-btn:hover:not(:disabled) {
+  background: #4527a0;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(81, 45, 168, 0.2);
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn-secondary {
+  padding: 1rem;
+  background: white;
+  border: 1.5px solid #eef0f7;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #666;
+}
+
+.btn-primary {
+  padding: 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ===== History View ===== */
+.history-item {
+  padding: 1rem;
+  border-bottom: 1px solid #f8f8f8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.history-item:hover { background: #fcfcff; }
+
+.history-info strong { display: block; color: #1a1a2e; }
+.history-info p { margin: 0.25rem 0 0 0; color: #999; font-size: 0.8rem; }
+
+.history-actions { display: flex; gap: 0.5rem; }
+
+.btn-load { background: #f6f3ff; color: #512da8; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+.btn-delete { background: #fee2e2; color: #991b1b; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .qr-container { grid-template-columns: 1fr; }
+  .preview-card { position: static; }
+}
