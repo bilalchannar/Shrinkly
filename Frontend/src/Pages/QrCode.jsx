@@ -269,44 +269,54 @@ const QRCodePage = () => {
             </button>
 
             {/* QR Code History */}
-            {showHistory && savedQRCodes.length > 0 && (
+            {showHistory && (
               <div className="qr-card" style={{ marginTop: '15px' }}>
                 <div className="card-header">
                   <span className="card-icon">📂</span>
                   <h2>Saved QR Codes</h2>
                 </div>
-                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                  {savedQRCodes.map(qr => (
-                    <div key={qr._id} style={{
-                      padding: '12px',
-                      borderBottom: '1px solid #eee',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <div>
-                        <strong>{qr.title}</strong>
-                        <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0' }}>
-                          {qr.destinationUrl.substring(0, 40)}...
-                        </p>
+                {savedQRCodes.length === 0 ? (
+                  <div className="empty-state-ds" style={{ padding: "2rem 1rem" }}>
+                    <span className="icon-wrap" style={{ fontSize: "2.5rem", marginBottom: "8px" }}>📱</span>
+                    <h3 style={{ fontSize: "1.1rem", marginBottom: "4px" }}>No QR Codes Saved</h3>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: 0 }}>
+                      Enter details and click 'Save to Account' to store QR codes here.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {savedQRCodes.map(qr => (
+                      <div key={qr._id} style={{
+                        padding: '12px',
+                        borderBottom: '1px solid var(--border-color)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div>
+                          <strong style={{ color: 'var(--text-primary)' }}>{qr.title}</strong>
+                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                            {qr.destinationUrl.substring(0, 40)}...
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            onClick={() => handleLoadQRCode(qr)}
+                            style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            Load
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteQRCode(qr._id)}
+                            style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: 'var(--error-color)', color: 'white', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button 
-                          onClick={() => handleLoadQRCode(qr)}
-                          style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: '#6f42c1', color: 'white', cursor: 'pointer' }}
-                        >
-                          Load
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteQRCode(qr._id)}
-                          style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: '#dc3545', color: 'white', cursor: 'pointer' }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

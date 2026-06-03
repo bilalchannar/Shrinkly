@@ -253,8 +253,10 @@ export default function Contact() {
                     </div>
                   ))
                 ) : (
-                  <div className="no-submissions">
-                    <p>No support requests found.</p>
+                  <div className="empty-state-ds card-ds" style={{ gridColumn: "1 / -1", background: "var(--bg-secondary)" }}>
+                    <span className="icon-wrap" style={{ fontSize: "2.5rem" }}>✉️</span>
+                    <h3>No Support Tickets Yet</h3>
+                    <p style={{ margin: "0.25rem auto 0" }}>Submit a query using the form above if you need help with your account or custom domains.</p>
                   </div>
                 )}
               </div>

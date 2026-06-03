@@ -1,16 +1,16 @@
-/* ===== Sidebar ===== */
+/* ===== Theme-Aware Sidebar Styling ===== */
 .sidebar {
   position: fixed;
   left: 0;
   top: 0;
   height: 100vh;
   width: 240px;
-  background-color: #fff;
-  border-right: 1px solid #e5e7eb;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
   z-index: 1000;
 }
 
@@ -24,7 +24,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
   min-height: 70px;
 }
 
@@ -41,6 +41,12 @@
   max-width: 150px;
   object-fit: contain;
   transition: all 0.3s ease;
+  filter: var(--logo-filter, none);
+}
+
+/* Let the logo look good in dark mode */
+[data-theme="dark"] .sidebar-logo {
+  filter: invert(1) brightness(2);
 }
 
 .sidebar.collapsed .sidebar-logo {
@@ -59,7 +65,7 @@
 
 /* Toggle Button */
 .toggle-btn {
-  background: #6f42c1;
+  background: var(--primary-color);
   color: #fff;
   border: none;
   padding: 0.5rem 0.75rem;
@@ -73,8 +79,8 @@
 }
 
 .toggle-btn:hover {
-  transform: scale(1.05);
-  background: #5b31aa;
+  transform: scale(1.02);
+  background: var(--primary-hover);
 }
 
 /* ===== Navigation ===== */
@@ -103,18 +109,18 @@
   gap: 0.8rem;
   padding: 0.9rem 1.2rem;
   text-decoration: none;
-  color: #555;
+  color: var(--text-secondary);
   font-size: 0.9rem;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background-color 0.2s, color 0.2s;
   border-left: 4px solid transparent;
   cursor: pointer;
 }
 
 .sidebar-links .nav-link:hover,
 .sidebar-links .nav-link.active {
-  background-color: #f3f0ff;
-  color: #6f42c1;
-  border-left: 4px solid #6f42c1;
+  background-color: var(--bg-tertiary);
+  color: var(--primary-color);
+  border-left-color: var(--primary-color);
   font-weight: 600;
 }
 
@@ -143,7 +149,7 @@
 /* ===== Footer ===== */
 .sidebar-footer {
   padding: 0.75rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -161,25 +167,48 @@
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: all 0.2s ease;
+}
+
+/* Theme Switcher Button */
+.theme-toggle-btn {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--bg-primary);
+  border-color: var(--primary-color);
 }
 
 .signin-btn {
-  background: none;
-  color: #6f42c1;
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--border-color) !important;
 }
 
 .signin-btn:hover {
-  background-color: #f3f0ff;
+  background-color: var(--bg-tertiary);
 }
 
 .signup-btn {
-  background-color: #6f42c1;
+  background-color: var(--primary-color);
   color: white;
 }
 
 .signup-btn:hover {
-  background-color: #5b31aa;
+  background-color: var(--primary-hover);
+}
+
+.logout-btn {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.15) !important;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
 }
 
 .btn-icon {
@@ -211,6 +240,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-primary);
 }
 
 .sidebar.collapsed ~ .main-content {

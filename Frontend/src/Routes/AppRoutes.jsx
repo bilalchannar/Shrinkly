@@ -1,11 +1,15 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "../context/AuthContext";
+import { ThemeProvider } from "../context/ThemeContext";
+import "../Css/Variables.css";
 import ProtectedRoute from "../Components/ProtectedRoute.jsx";
 import Auth from "../Auth/Auth.jsx";
 import VerifyEmail from "../Auth/VerifyEmail.jsx";
 import ForgotPassword from "../Auth/ForgotPassword.jsx";
 import ResetPassword from "../Auth/ResetPassword.jsx";
 import Home from "../Pages/Home.jsx";
+import Landing from "../Pages/Landing.jsx";
 import Link from "../Pages/Link.jsx";
 import Analytics from "../Pages/Analytics.jsx";
 import Contact from "../Pages/Contact.jsx";
@@ -16,11 +20,14 @@ import NotFound from "../Pages/NotFound.jsx";
 
 const AppRoutes = () => {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <ThemeProvider>
+      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
-          {/* Public auth routes */}
-          <Route path="/" element={<Auth />} />
+          {/* Public pages */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -51,6 +58,7 @@ const AppRoutes = () => {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
   );
 };
 

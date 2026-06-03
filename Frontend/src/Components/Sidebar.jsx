@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import "../Css/Sidebar.css";
 
 const Sidebar = () => {
@@ -8,6 +9,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, isAuthenticated } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const toggleSidebar = () => setCollapsed(!collapsed);
 
@@ -66,6 +68,10 @@ const Sidebar = () => {
 
       {/* Footer Buttons */}
       <div className="sidebar-footer">
+        <button className="theme-toggle-btn" onClick={toggleTheme} title="Toggle Theme">
+          <span className="btn-icon">{theme === "light" ? "🌙" : "☀️"}</span>
+          <span className="btn-text">{theme === "light" ? "Dark Mode" : "Light Mode"}</span>
+        </button>
         {isAuthenticated() ? (
           <button className="logout-btn" onClick={handleLogout}>
             <span className="btn-icon">🚪</span>
@@ -73,11 +79,11 @@ const Sidebar = () => {
           </button>
         ) : (
           <>
-            <button className="signin-btn" onClick={() => handleNavigate("/")}>
+            <button className="signin-btn" onClick={() => handleNavigate("/auth")}>
               <span className="btn-icon">🔑</span>
               <span className="btn-text">Sign In</span>
             </button>
-            <button className="signup-btn" onClick={() => handleNavigate("/")}>
+            <button className="signup-btn" onClick={() => handleNavigate("/auth")}>
               <span className="btn-icon">📝</span>
               <span className="btn-text">Sign Up</span>
             </button>

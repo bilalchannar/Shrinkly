@@ -15,7 +15,7 @@ const {
 } = require("../controllers/linkController");
 
 // Link CRUD (require auth)
-router.post("/shorten",              auth, createShortLink);
+router.post("/shorten",              optionalAuth, createShortLink);
 router.get("/links",                 auth, getAllLinks);
 router.get("/links/stats",           auth, getLinkStats);
 router.get("/links/export",          auth, exportLinks);
