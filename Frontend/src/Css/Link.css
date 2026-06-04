@@ -661,10 +661,82 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive Table */
+/* Responsive Styles */
 @media (max-width: 768px) {
+  .link-container {
+    padding: 1.5rem 1rem;
+  }
+  
+  .link-header {
+    padding: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .btn-create-toggle {
+    width: 100%;
+  }
+
+  .create-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .creation-footer {
+    width: 100%;
+  }
+
+  .btn-save-link {
+    width: 100%;
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-bar button {
+    width: 100%;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-item-wrap {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-item-wrap select, 
+  .filter-item-wrap input {
+    width: 100% !important;
+  }
+
   .modal-body-layout {
     grid-template-columns: 1fr;
     gap: 2rem;
+  }
+
+  .modal-grid-two {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .link-preview-modal-content {
+    padding: 1.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-link-copy-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .btn-modal-copy {
+    width: 100%;
   }
 }

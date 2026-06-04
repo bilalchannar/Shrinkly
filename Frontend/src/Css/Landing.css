@@ -740,9 +740,30 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.6rem;
+  .nav-links {
+    display: none;
   }
+  
+  .hero-wrap {
+    padding: 6rem 1rem 3rem;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 280px;
+    margin: 0 auto;
+  }
+
   .demo-form {
     flex-direction: column;
     border-radius: 20px;

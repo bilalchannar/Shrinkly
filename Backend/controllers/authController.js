@@ -1,4 +1,5 @@
 const User = require("../models/users");
+const TokenBlacklist = require("../models/TokenBlacklist");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -20,6 +21,7 @@ const safeUser = (user) => ({
   location: user.location,
   avatar: user.avatar,
   plan: user.plan,
+  role: user.role || "user",
   isAdmin: user.isAdmin,
   emailVerified: user.emailVerified,
   createdAt: user.createdAt
@@ -174,16 +176,28 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Block login if account is suspended
+    if (user.suspended) {
+      return res.status(403).json({ message: 'Your account has been suspended. Contact support.' });
+    }
+
     // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    // Generate access token (short-lived: 15 minutes)
+    const accessToken = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
+    
+    // Generate refresh token (long-lived: 7 days)
+    const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET;
+    const refreshToken = jwt.sign({ id: user._id, type: "refresh" }, refreshTokenSecret, { expiresIn: "7d" });
 
     res.status(200).json({
       message: "Login successful",
       user: safeUser(user),
-      token
+      accessToken,
+      refreshToken,
+      expiresIn: 900 // 15 minutes in seconds
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -280,6 +294,107 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: "Password reset successfully! You can now log in with your new password." });
   } catch (err) {
     console.error("Reset password error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ======================== REFRESH TOKEN ========================
+exports.refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ message: "Refresh token is required" });
+  }
+
+  try {
+    // Verify refresh token
+    const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET;
+    const decoded = jwt.verify(refreshToken, refreshTokenSecret);
+    
+    if (decoded.type !== "refresh") {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    // Check if token is blacklisted
+    const blacklistedToken = await TokenBlacklist.findOne({ token: refreshToken });
+    if (blacklistedToken) {
+      return res.status(401).json({ message: "Refresh token has been revoked. Please login again." });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
+
+    res.json({
+      success: true,
+      accessToken: newAccessToken,
+      expiresIn: 900 // 15 minutes in seconds
+    });
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Refresh token expired. Please login again." });
+    }
+    return res.status(401).json({ message: "Invalid refresh token" });
+  }
+};
+
+// ======================== LOGOUT ========================
+exports.logout = async (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(400).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    // Decode token to get expiry
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Add token to blacklist
+    const blacklistedToken = new TokenBlacklist({
+      userId: decoded.id,
+      token,
+      tokenType: "access",
+      expiresAt: new Date(decoded.exp * 1000),
+      reason: "logout"
+    });
+    await blacklistedToken.save();
+
+    // Also blacklist the refresh token if provided
+    const { refreshToken } = req.body;
+    if (refreshToken) {
+      try {
+        const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET;
+        const refreshDecoded = jwt.verify(refreshToken, refreshTokenSecret);
+        const blacklistedRefresh = new TokenBlacklist({
+          userId: refreshDecoded.id,
+          token: refreshToken,
+          tokenType: "refresh",
+          expiresAt: new Date(refreshDecoded.exp * 1000),
+          reason: "logout"
+        });
+        await blacklistedRefresh.save();
+      } catch (refreshErr) {
+        // Refresh token may be expired or invalid, that's ok during logout
+      }
+    }
+
+    res.json({ 
+      success: true,
+      message: "Logged out successfully" 
+    });
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      // Token is already expired, no need to blacklist
+      return res.json({ success: true, message: "Logged out successfully" });
+    }
+    console.error("Logout error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

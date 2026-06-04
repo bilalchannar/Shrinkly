@@ -1,5 +1,11 @@
 const Contact = require("../models/Contact");
 
+// Helper: escape HTML to prevent XSS in email templates
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 // Submit contact form (public)
 exports.submitContact = async (req, res) => {
   try {
@@ -23,6 +29,7 @@ exports.submitContact = async (req, res) => {
     }
 
     const contact = new Contact({
+      userId: req.userId || null,
       fullName: fullName.trim(),
       email: email.trim().toLowerCase(),
       phone: phone?.trim() || "",
@@ -35,28 +42,29 @@ exports.submitContact = async (req, res) => {
     // Send email notification to Admin
     try {
       const sendEmail = require("../utils/sendEmail");
-      const adminEmail = "bilalchannar01@gmail.com";
-      const subject = `New Contact Message: ${subject || "General Inquiry"}`;
+      const adminEmail = process.env.ADMIN_EMAIL || "bilalchannar01@gmail.com";
+      const emailSubject = `New Contact Message: ${escapeHtml(subject) || "General Inquiry"}`;
       const html = `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
           <h2 style="color: #6f42c1;">New Contact Submission</h2>
-          <p><strong>From:</strong> ${fullName} (${email})</p>
-          <p><strong>Phone:</strong> ${phone || "Not provided"}</p>
-          <p><strong>Subject:</strong> ${subject || "General Inquiry"}</p>
+          <p><strong>From:</strong> ${escapeHtml(fullName)} (${escapeHtml(email)})</p>
+          <p><strong>Phone:</strong> ${escapeHtml(phone) || "Not provided"}</p>
+          <p><strong>Subject:</strong> ${escapeHtml(subject) || "General Inquiry"}</p>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
             <strong>Message:</strong><br/>
-            ${message.replace(/\n/g, "<br/>")}
+            ${escapeHtml(message).replace(/\n/g, "<br/>")}
           </div>
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;"/>
           <p style="font-size: 12px; color: #999;">This is an automated notification from Shrinkly.</p>
         </div>
       `;
 
-      await sendEmail(adminEmail, subject, html);
+      await sendEmail(adminEmail, emailSubject, html);
     } catch (emailErr) {
       console.error("Failed to send contact notification email:", emailErr);
       // Don't fail the request if email fails
     }
+
 
     return res.status(201).json({
       success: true,
@@ -72,12 +80,26 @@ exports.submitContact = async (req, res) => {
   }
 };
 
-// Get all contacts (admin only)
+// Get all contacts (admin, or user's own)
 exports.getAllContacts = async (req, res) => {
   try {
     const { status, priority, search, sortBy, page = 1, limit = 20 } = req.query;
 
     let query = {};
+
+    // If not admin/superadmin, restrict to user's own tickets (by userId or email)
+    if (req.userRole !== "admin" && req.userRole !== "superadmin") {
+      const User = require("../models/users");
+      const userObj = await User.findById(req.userId);
+      if (userObj) {
+        query.$or = [
+          { userId: req.userId },
+          { email: userObj.email }
+        ];
+      } else {
+        query.userId = req.userId;
+      }
+    }
 
     // Status filter
     if (status && status !== "all") {
@@ -145,7 +167,7 @@ exports.getAllContacts = async (req, res) => {
   }
 };
 
-// Get single contact by ID (admin only)
+// Get single contact by ID (admin or ticket owner)
 exports.getContactById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -158,8 +180,22 @@ exports.getContactById = async (req, res) => {
       });
     }
 
-    // Mark as read if it's new
-    if (contact.status === "new") {
+    // Authorization check: only admin/superadmin or the ticket owner can view
+    if (req.userRole !== "admin" && req.userRole !== "superadmin") {
+      const User = require("../models/users");
+      const userObj = await User.findById(req.userId);
+      const isOwner = (contact.userId && contact.userId.toString() === req.userId) || 
+                      (userObj && contact.email === userObj.email);
+      if (!isOwner) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. You do not own this ticket."
+        });
+      }
+    }
+
+    // Mark as read if it's new (admin only)
+    if (contact.status === "new" && (req.userRole === "admin" || req.userRole === "superadmin")) {
       contact.status = "read";
       await contact.save();
     }
@@ -209,6 +245,22 @@ exports.updateContact = async (req, res) => {
       contact.status = status;
       if (status === "replied") {
         contact.repliedAt = new Date();
+        try {
+          const User = require("../models/users");
+          const userObj = await User.findOne({ email: contact.email });
+          if (userObj) {
+            const { createNotification } = require("../services/notificationService");
+            await createNotification(
+              userObj._id,
+              "success",
+              "Support Ticket Replied",
+              `Your support request regarding "${contact.subject}" has received a reply.`,
+              { contactId: contact._id }
+            );
+          }
+        } catch (err) {
+          console.error("Failed to create support reply notification:", err);
+        }
       }
     }
     if (priority) contact.priority = priority;

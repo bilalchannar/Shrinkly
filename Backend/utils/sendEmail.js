@@ -7,8 +7,22 @@ const transporter = require("../config/email");
  * @param {string} html - HTML body content
  */
 const sendEmail = async (to, subject, html) => {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+  
+  // Mock email if credentials are missing or placeholders
+  const isMock = !user || !pass || user.includes("your_email") || pass.includes("your_gmail_app_password");
+
+  if (isMock) {
+    console.log(`✉️ [MOCK EMAIL DISPATCH]`);
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Content Preview: ${html.substring(0, 150).replace(/<[^>]*>/g, '')}...`);
+    return;
+  }
+
   const mailOptions = {
-    from: `"Shrinkly" <${process.env.EMAIL_USER}>`,
+    from: `"Shrinkly" <${user}>`,
     to,
     subject,
     html

@@ -299,3 +299,112 @@
   .qr-container { grid-template-columns: 1fr; }
   .preview-card { position: static; }
 }
+
+@media (max-width: 768px) {
+  .qr-container {
+    padding: 1.5rem 1rem;
+    grid-template-columns: 1fr;
+  }
+  
+  .qr-header {
+    padding: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .btn-history-toggle {
+    width: 100%;
+  }
+
+  .qr-card {
+    padding: 1.5rem;
+  }
+
+  .logo-upload-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .history-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .history-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .history-actions button {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+/* Premium QR Designer Additions */
+.empty-state-ds {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-ds h3 {
+  color: var(--text-primary);
+  margin: 0.75rem 0 0.25rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.empty-state-ds p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  max-width: 320px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.checkbox-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.logo-upload-wrapper {
+  margin-bottom: 0.5rem;
+}
+
+.logo-preview-box {
+  background: var(--bg-primary);
+  padding: 0.5rem;
+  border-radius: 8px;
+  display: inline-flex;
+}
+
+.qr-history-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+.edit-indicator-badge {
+  animation: pulseBadge 2s infinite;
+}
+
+@keyframes pulseBadge {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(var(--primary-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0);
+  }
+}

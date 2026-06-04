@@ -458,3 +458,89 @@ input {
 .auth-verify-container .auth-back-link {
   margin-top: 15px;
 }
+
+/* Hide mobile switcher on desktop */
+.mobile-switch-auth {
+  display: none;
+}
+
+/* ===== Responsive styles for Auth Page ===== */
+@media (max-width: 768px) {
+  .root-container {
+    height: auto;
+    min-height: 100vh;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 15px;
+    border-radius: 0;
+  }
+
+  .container {
+    width: 100% !important;
+    min-height: auto;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .overlay-container {
+    display: none !important;
+  }
+  
+  .form-container {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    top: 0;
+    left: 0 !important;
+    transform: none !important;
+    transition: none !important;
+    opacity: 0 !important;
+    display: none !important;
+  }
+
+  /* By default (login active) */
+  .container:not(.right-panel-active) .sign-in-container {
+    display: block !important;
+    opacity: 1 !important;
+    z-index: 2 !important;
+  }
+
+  /* When signup active */
+  .container.right-panel-active .sign-up-container {
+    display: block !important;
+    opacity: 1 !important;
+    z-index: 2 !important;
+    animation: none !important;
+  }
+
+  form {
+    padding: 30px 20px !important;
+    height: auto !important;
+  }
+
+  .mobile-switch-auth {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 20px;
+  }
+
+  .btn-link-auth {
+    background: none !important;
+    border: none !important;
+    color: #512da8 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    cursor: pointer !important;
+    border-radius: 0 !important;
+    width: auto !important; /* Overrides universal full width helper */
+  }
+
+  .btn-link-auth:hover {
+    text-decoration: underline !important;
+  }
+}

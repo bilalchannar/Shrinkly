@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { authAPI } from "../services/api";
 import "./Auth.css";
 
-const App = () => {
+const Auth = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
@@ -202,6 +202,10 @@ const App = () => {
             )}
 
             <button type="submit">Sign Up</button>
+            <div className="mobile-switch-auth">
+              <span>Already have an account? </span>
+              <button type="button" className="btn-link-auth" onClick={() => setIsSignup(false)}>Sign In</button>
+            </div>
           </form>
           )}
         </div>
@@ -275,6 +279,10 @@ const App = () => {
 
             <a href="#forgot" onClick={() => navigate("/forgot-password")}>Forgot your password?</a>
             <button type="submit" disabled={loading}>{loading ? "Signing in..." : "Sign In"}</button>
+            <div className="mobile-switch-auth">
+              <span>Don't have an account? </span>
+              <button type="button" className="btn-link-auth" onClick={() => setIsSignup(true)}>Sign Up</button>
+            </div>
           </form>
           )}
         </div>
@@ -303,4 +311,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Auth;

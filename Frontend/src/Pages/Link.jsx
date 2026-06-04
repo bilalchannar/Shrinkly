@@ -5,7 +5,8 @@ import QRCode from "react-qr-code";
 import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
 import "../Css/Link.css";
-import { linksAPI } from "../services/api";
+import { linksAPI, domainsAPI, exportImportAPI } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const SkeletonRow = ({ cols = 8 }) => (
   <tr className="skeleton-row">
@@ -17,6 +18,7 @@ const SkeletonRow = ({ cols = 8 }) => (
 
 export default function LinkPage() {
   const navigate = useNavigate();
+  const { activeWorkspace, workspaces } = useAuth();
   const [showCreateBox, setShowCreateBox] = useState(false);
   const [shortLink, setShortLink] = useState("");
   const [longUrl, setLongUrl] = useState("");
@@ -26,11 +28,18 @@ export default function LinkPage() {
   const [maxClicks, setMaxClicks] = useState("");
   const [linkPassword, setLinkPassword] = useState("");
   const [editingIdx, setEditingIdx] = useState(null);
+  const [verifiedDomains, setVerifiedDomains] = useState([]);
+  const [selectedDomain, setSelectedDomain] = useState("shrinkly.link");
   const [editUrl, setEditUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [links, setLinks] = useState([]);
   const [selectedLinks, setSelectedLinks] = useState([]);
   const [previewLink, setPreviewLink] = useState(null);
+  const [creationWorkspaceId, setCreationWorkspaceId] = useState("personal");
+  const [importFile, setImportFile] = useState(null);
+  const [importSummary, setImportSummary] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [showImportSummaryModal, setShowImportSummaryModal] = useState(false);
   const [visibleCols, setVisibleCols] = useState({
     original: true,
     short: true,
@@ -39,6 +48,36 @@ export default function LinkPage() {
     status: true,
     tags: true
   });
+
+  // Keep creation workspace in sync with active sidebar workspace
+  useEffect(() => {
+    setCreationWorkspaceId(activeWorkspace || "personal");
+  }, [activeWorkspace]);
+
+  // Load custom domains for the creation context
+  useEffect(() => {
+    const fetchVerifiedDomains = async () => {
+      try {
+        const data = await domainsAPI.getAll(creationWorkspaceId);
+        if (data.success) {
+          const verified = data.domains.filter(d => d.status === "verified");
+          setVerifiedDomains(verified);
+          
+          // Check if there is a default verified domain in this list
+          const defaultDomainObj = verified.find(d => d.isDefault);
+          if (defaultDomainObj) {
+            setSelectedDomain(defaultDomainObj.domain);
+          } else {
+            setSelectedDomain("shrinkly.link");
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load verified domains:", error);
+      }
+    };
+
+    fetchVerifiedDomains();
+  }, [creationWorkspaceId]);
 
   // Search / filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +98,7 @@ export default function LinkPage() {
   const fetchLinks = useCallback(async (pageNum) => {
     setLoading(true);
     try {
-      const params = { page: pageNum, limit: LIMIT };
+      const params = { page: pageNum, limit: LIMIT, workspaceId: activeWorkspace };
       if (searchQuery) params.search = searchQuery;
       
       // Map frontend filters to API parameters
@@ -94,9 +133,9 @@ export default function LinkPage() {
       toast.error("Failed to load links");
     }
     setLoading(false);
-  }, [searchQuery, filterStatus, filterTag, filterStartDate, filterEndDate, sortBy, filterClicks]);
+  }, [searchQuery, filterStatus, filterTag, filterStartDate, filterEndDate, sortBy, filterClicks, activeWorkspace]);
 
-  useEffect(() => { setPage(1); fetchLinks(1); }, [filterStatus, filterTag, filterStartDate, filterEndDate, sortBy, filterClicks]); // eslint-disable-line
+  useEffect(() => { setPage(1); fetchLinks(1); }, [filterStatus, filterTag, filterStartDate, filterEndDate, sortBy, filterClicks, activeWorkspace]); // eslint-disable-line
   useEffect(() => { fetchLinks(page); }, [page, fetchLinks]); // eslint-disable-line
 
   const handleSearch = () => { setPage(1); fetchLinks(1); };
@@ -110,10 +149,12 @@ export default function LinkPage() {
       const data = await linksAPI.create({
         originalUrl: longUrl.trim(),
         customSlug: customSlug || undefined,
+        domain: selectedDomain,
         tags: linkTags || undefined,
         expiresAt: expiresAt || undefined,
         maxClicks: maxClicks ? parseInt(maxClicks) : undefined,
-        password: linkPassword || undefined
+        password: linkPassword || undefined,
+        workspaceId: creationWorkspaceId !== "personal" ? creationWorkspaceId : undefined
       });
       if (data.success) {
         setLinks([data.link, ...links]);
@@ -174,6 +215,7 @@ export default function LinkPage() {
     setExpiresAt(link.expiresAt ? link.expiresAt.substring(0, 16) : "");
     setMaxClicks(link.maxClicks || "");
     setLinkTags(Array.isArray(link.tags) ? link.tags.join(", ") : link.tags || "");
+    setSelectedDomain(link.domain || "shrinkly.link");
     setShowCreateBox(true);
     toast.success("Link fields duplicated! Custom slug and password can be added.");
   };
@@ -253,7 +295,7 @@ export default function LinkPage() {
   const handleExportCSV = async () => {
     const toastId = toast.loading("Exporting CSV...");
     try {
-      const data = await linksAPI.export();
+      const data = await linksAPI.export({ workspaceId: activeWorkspace });
       if (data.success) {
         let exportRows = data.data;
         // If specific items are selected, filter the export to only contain those items
@@ -292,6 +334,69 @@ export default function LinkPage() {
         toast.success("Exported successfully!", { id: toastId });
       }
     } catch { toast.error("Export failed", { id: toastId }); }
+  };
+
+  const handleDownloadExport = async (type, format) => {
+    const toastId = toast.loading(`Preparing ${type} export...`);
+    try {
+      const endpoint = `export/${type}.${format}`;
+      const blob = await exportImportAPI.downloadFile(endpoint);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success(`${type} exported successfully!`, { id: toastId });
+    } catch (err) {
+      toast.error(err.message || `Failed to export ${type}`, { id: toastId });
+    }
+  };
+
+  const handleDownloadSampleCSV = () => {
+    const headers = ["originalUrl", "slug", "tags", "expiresAt", "maxClicks"];
+    const rows = [
+      ["https://example.com/promo-page", "promo2026", "promo;marketing", "2026-12-31T23:59:59.000Z", "1000"],
+      ["https://google.com", "", "search;test", "", ""]
+    ];
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "shrinkly_links_sample.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success("Sample CSV downloaded!");
+  };
+
+  const handleImportCSV = async (e) => {
+    e.preventDefault();
+    if (!importFile) return toast.error("Please select a CSV file to import.");
+    
+    setIsImporting(true);
+    const toastId = toast.loading("Uploading and processing CSV...");
+    try {
+      const res = await exportImportAPI.importLinks(importFile);
+      if (res.success) {
+        setImportSummary(res.summary);
+        setShowImportSummaryModal(true);
+        setImportFile(null);
+        const fileInput = document.getElementById("csv-file-input");
+        if (fileInput) fileInput.value = "";
+        
+        toast.success("CSV processed!", { id: toastId });
+        fetchLinks(1);
+      } else {
+        toast.error(res.message || "Failed to import links", { id: toastId });
+      }
+    } catch (err) {
+      toast.error(err.message || "Error importing links", { id: toastId });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const downloadQRFromModal = () => {
@@ -346,6 +451,27 @@ export default function LinkPage() {
     );
   };
 
+  const safetyBadge = (link) => {
+    const safety = link.safetyStatus || "safe";
+    let label = safety.toUpperCase();
+    let color = "#28a745"; // Default green for safe
+    let background = "rgba(40, 167, 69, 0.1)";
+
+    if (safety === "blocked") {
+      color = "#dc3545"; // Red
+      background = "rgba(220, 53, 69, 0.1)";
+    } else if (safety === "suspicious") {
+      color = "#fd7e14"; // Orange
+      background = "rgba(253, 126, 20, 0.1)";
+    }
+
+    return (
+      <span className="status-badge-custom" style={{ color: color, backgroundColor: background, border: `1px solid ${color}`, fontWeight: "bold", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", textTransform: "uppercase" }}>
+        {label}
+      </span>
+    );
+  };
+
   return (
     <>
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
@@ -355,7 +481,12 @@ export default function LinkPage() {
           {/* Header */}
           <header className="link-header">
             <div className="link-header-left">
-              <h1>Link Management</h1>
+              <h1>
+                Link Management{" "}
+                {workspaces.find((w) => w._id === activeWorkspace)
+                  ? `(${workspaces.find((w) => w._id === activeWorkspace).name})`
+                  : "(Personal)"}
+              </h1>
               <p>Create, organize, and track your short links</p>
             </div>
             <div className="link-header-right">
@@ -375,10 +506,59 @@ export default function LinkPage() {
                 </div>
                 <div className="create-grid">
                   <div className="input-group">
+                    <label>Workspace Context</label>
+                    <select
+                      value={creationWorkspaceId}
+                      onChange={e => setCreationWorkspaceId(e.target.value)}
+                      className="workspace-creation-select"
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem 1rem",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border-color)",
+                        backgroundColor: "var(--bg-tertiary)",
+                        color: "var(--text-primary)",
+                        outline: "none",
+                        fontSize: "0.9rem"
+                      }}
+                    >
+                      <option value="personal">👤 Personal Space</option>
+                      {workspaces.map(ws => (
+                        <option key={ws._id} value={ws._id}>
+                          {ws.status === "invited" ? "✉️ (Invited) " : "🏢 "}{ws.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="input-group">
                     <label>Destination URL *</label>
                     <input type="text" placeholder="https://example.com/very-long-url"
                       value={longUrl} onChange={e => setLongUrl(e.target.value)}
                       onKeyPress={e => e.key === "Enter" && handleCreateLink()} />
+                  </div>
+                  <div className="input-group">
+                    <label>Short Domain</label>
+                    <select
+                      value={selectedDomain}
+                      onChange={e => setSelectedDomain(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem 1rem",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border-color)",
+                        backgroundColor: "var(--bg-tertiary)",
+                        color: "var(--text-primary)",
+                        outline: "none",
+                        fontSize: "0.9rem"
+                      }}
+                    >
+                      <option value="shrinkly.link">shrinkly.link (default)</option>
+                      {verifiedDomains.map(d => (
+                        <option key={d._id} value={d.domain}>
+                          {d.domain}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="input-group">
                     <label>Custom Back-half (optional)</label>
@@ -589,7 +769,12 @@ export default function LinkPage() {
                         )}
 
                         {visibleCols.status && (
-                          <td>{statusBadge(link)}</td>
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                              {statusBadge(link)}
+                              {safetyBadge(link)}
+                            </div>
+                          </td>
                         )}
 
                         {visibleCols.tags && (
@@ -670,6 +855,85 @@ export default function LinkPage() {
               </div>
             </div>
           )}
+
+          {/* Export & Import Panel */}
+          <div className="export-import-panel glass-box" style={{ marginTop: "2rem", padding: "2rem" }}>
+            <div className="panel-header" style={{ marginBottom: "1.5rem" }}>
+              <h2>Data Portability & Bulk Operations</h2>
+              <p>Import links in bulk via CSV or export your links, analytics, and QR codes for backup or external reporting.</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem" }}>
+              {/* Export Card */}
+              <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
+                <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--text-primary)" }}>📤 Export Workspace Data</h3>
+                <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1.5rem" }}>Download your datasets instantly in CSV or JSON formats.</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <button className="btn-secondary" onClick={() => handleDownloadExport("links", "csv")} style={{ width: "100%", justifyContent: "center" }}>
+                    🔗 Export Links (CSV)
+                  </button>
+                  <button className="btn-secondary" onClick={() => handleDownloadExport("links", "json")} style={{ width: "100%", justifyContent: "center" }}>
+                    📦 Export Links (JSON)
+                  </button>
+                  <button className="btn-secondary" onClick={() => handleDownloadExport("analytics", "csv")} style={{ width: "100%", justifyContent: "center" }}>
+                    📈 Export Clicks Analytics (CSV)
+                  </button>
+                  <button className="btn-secondary" onClick={() => handleDownloadExport("qrcodes", "csv")} style={{ width: "100%", justifyContent: "center" }}>
+                    🔲 Export QR Codes (CSV)
+                  </button>
+                </div>
+              </div>
+
+              {/* Import Card */}
+              <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
+                <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--text-primary)" }}>📥 Bulk Import Links</h3>
+                <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
+                  Upload a CSV file containing your links to create them all at once.
+                </p>
+                <div style={{ marginBottom: "1rem" }}>
+                  <span onClick={handleDownloadSampleCSV} style={{ color: "#7c3aed", cursor: "pointer", textDecoration: "underline", fontSize: "0.85rem", fontWeight: "600" }}>
+                    📄 Download Sample CSV Template
+                  </span>
+                </div>
+                <form onSubmit={handleImportCSV} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <div style={{
+                    border: "2px dashed var(--border-color)",
+                    borderRadius: "8px",
+                    padding: "1.5rem",
+                    textAlign: "center",
+                    backgroundColor: "var(--bg-tertiary)",
+                    cursor: "pointer",
+                    position: "relative"
+                  }}>
+                    <input 
+                      type="file" 
+                      id="csv-file-input" 
+                      accept=".csv" 
+                      onChange={(e) => setImportFile(e.target.files[0])} 
+                      style={{
+                        opacity: 0,
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        cursor: "pointer"
+                      }}
+                    />
+                    <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>📁</div>
+                    <div style={{ fontSize: "0.9rem", fontWeight: "bold" }}>
+                      {importFile ? importFile.name : "Drag & Drop or Click to Upload CSV"}
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
+                      Supports columns: originalUrl (required), slug, tags, expiresAt, maxClicks
+                    </div>
+                  </div>
+                  <button type="submit" className="btn-save-link" disabled={!importFile || isImporting} style={{ width: "100%", marginTop: "0.5rem" }}>
+                    {isImporting ? "Processing Import..." : "Import CSV Links"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
           </div>
         </div>
       </div>
@@ -720,8 +984,11 @@ export default function LinkPage() {
                     <p>{previewLink.isPasswordProtected ? "🔒 Password Protected" : "🔓 Open Link (Public)"}</p>
                   </div>
                   <div className="modal-detail-item">
-                    <label>Status Badge</label>
-                    <div>{statusBadge(previewLink)}</div>
+                    <label>Status Badge / Safety</label>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {statusBadge(previewLink)}
+                      {safetyBadge(previewLink)}
+                    </div>
                   </div>
                 </div>
                 <div className="modal-detail-item">
@@ -750,6 +1017,71 @@ export default function LinkPage() {
                 </div>
                 <button className="btn-modal-qr-download" onClick={downloadQRFromModal}>
                   Download PNG QR Code
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Summary Modal */}
+      {showImportSummaryModal && importSummary && (
+        <div className="link-preview-modal-overlay" onClick={() => setShowImportSummaryModal(false)}>
+          <div className="link-preview-modal-content animate-slide-up" style={{ maxWidth: "600px" }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>CSV Import Complete</h2>
+              <button className="btn-close-modal" onClick={() => setShowImportSummaryModal(false)}>✕</button>
+            </div>
+            <div className="modal-body-layout" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", textAlign: "center" }}>
+                <div style={{ padding: "1rem", backgroundColor: "rgba(124, 58, 237, 0.1)", borderRadius: "8px", border: "1px solid rgba(124, 58, 237, 0.2)" }}>
+                  <h4 style={{ fontSize: "1.5rem", margin: 0, color: "#7c3aed" }}>{importSummary.totalRows}</h4>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>Total Rows</p>
+                </div>
+                <div style={{ padding: "1rem", backgroundColor: "rgba(40, 167, 69, 0.1)", borderRadius: "8px", border: "1px solid rgba(40, 167, 69, 0.2)" }}>
+                  <h4 style={{ fontSize: "1.5rem", margin: 0, color: "#28a745" }}>{importSummary.importedCount}</h4>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>Successfully Imported</p>
+                </div>
+                <div style={{ padding: "1rem", backgroundColor: "rgba(220, 53, 69, 0.1)", borderRadius: "8px", border: "1px solid rgba(220, 53, 69, 0.2)" }}>
+                  <h4 style={{ fontSize: "1.5rem", margin: 0, color: "#dc3545" }}>{importSummary.skippedCount}</h4>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>Skipped / Errors</p>
+                </div>
+              </div>
+              
+              {importSummary.errors && importSummary.errors.length > 0 && (
+                <div>
+                  <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem", color: "#dc3545" }}>⚠️ Row-level Validation Errors</h3>
+                  <div style={{ 
+                    maxHeight: "200px", 
+                    overflowY: "auto", 
+                    border: "1px solid var(--border-color)", 
+                    borderRadius: "6px", 
+                    padding: "0.5rem",
+                    backgroundColor: "var(--bg-tertiary)"
+                  }}>
+                    <table style={{ width: "100%", fontSize: "0.85rem", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid var(--border-color)", textAlign: "left" }}>
+                          <th style={{ padding: "0.5rem" }}>Row</th>
+                          <th style={{ padding: "0.5rem" }}>Message</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importSummary.errors.map((err, i) => (
+                          <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                            <td style={{ padding: "0.5rem", fontWeight: "bold" }}>{err.row}</td>
+                            <td style={{ padding: "0.5rem", color: "var(--text-secondary)" }}>{err.message}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button className="btn-secondary" onClick={() => setShowImportSummaryModal(false)}>
+                  Close Summary
                 </button>
               </div>
             </div>

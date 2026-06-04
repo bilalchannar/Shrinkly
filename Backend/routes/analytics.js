@@ -7,6 +7,12 @@ const {
   getInsights,
   exportAnalytics
 } = require("../controllers/analyticsController");
+const {
+  createConversionPixel,
+  getConversionPixels,
+  deleteConversionPixel,
+  getConversionAnalytics
+} = require("../controllers/conversionTracker");
 
 // All analytics routes require authentication
 router.use(auth);
@@ -25,5 +31,18 @@ router.get("/insights", getInsights);
 
 // Export analytics data
 router.get("/export", exportAnalytics);
+
+// ======================== CONVERSION TRACKING ========================
+// Create conversion pixel for link
+router.post("/link/:linkId/conversion-pixels", createConversionPixel);
+
+// Get all conversion pixels for link
+router.get("/link/:linkId/conversion-pixels", getConversionPixels);
+
+// Delete conversion pixel
+router.delete("/link/:linkId/conversion-pixels/:pixelId", deleteConversionPixel);
+
+// Get conversion analytics for link
+router.get("/link/:linkId/conversions", getConversionAnalytics);
 
 module.exports = router;

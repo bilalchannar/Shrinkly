@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { authAPI } from "../services/api";
+import api, { authAPI } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -7,6 +7,38 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [workspaces, setWorkspaces] = useState([]);
+  const [activeWorkspace, setActiveWorkspaceState] = useState(() => {
+    return localStorage.getItem("activeWorkspaceId") || "personal";
+  });
+
+  const setActiveWorkspace = (id) => {
+    setActiveWorkspaceState(id);
+    localStorage.setItem("activeWorkspaceId", id);
+  };
+
+  const fetchWorkspaces = async () => {
+    if (!localStorage.getItem("authToken")) return;
+    try {
+      const data = await api.workspace.getAllWorkspaces();
+      if (data.success) {
+        setWorkspaces(data.workspaces);
+        
+        // Validate if active workspace still exists in user's list
+        const activeId = localStorage.getItem("activeWorkspaceId") || "personal";
+        if (activeId !== "personal") {
+          const exists = data.workspaces.some(ws => ws._id === activeId);
+          if (!exists) {
+            setActiveWorkspace("personal");
+          } else {
+            setActiveWorkspaceState(activeId);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching workspaces in context:", error);
+    }
+  };
 
   useEffect(() => {
     // Check for existing auth on mount and validate token
@@ -25,12 +57,14 @@ export const AuthProvider = ({ children }) => {
             // Token invalid, clear storage
             localStorage.removeItem("loggedInUser");
             localStorage.removeItem("authToken");
+            localStorage.removeItem("activeWorkspaceId");
           }
         } catch (error) {
           // Token invalid or expired, clear storage
           console.log("Token validation failed, clearing auth");
           localStorage.removeItem("loggedInUser");
           localStorage.removeItem("authToken");
+          localStorage.removeItem("activeWorkspaceId");
         }
       }
       setLoading(false);
@@ -38,6 +72,16 @@ export const AuthProvider = ({ children }) => {
     
     validateAuth();
   }, []);
+
+  useEffect(() => {
+    if (token) {
+      fetchWorkspaces();
+    } else {
+      setWorkspaces([]);
+      setActiveWorkspaceState("personal");
+      localStorage.removeItem("activeWorkspaceId");
+    }
+  }, [token]);
 
   const login = (userData, authToken) => {
     setUser(userData);
@@ -51,6 +95,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("authToken");
+    localStorage.removeItem("activeWorkspaceId");
   };
 
   const updateUser = (userData) => {
@@ -70,7 +115,11 @@ export const AuthProvider = ({ children }) => {
       login, 
       logout, 
       updateUser, 
-      isAuthenticated 
+      isAuthenticated,
+      workspaces,
+      activeWorkspace,
+      setActiveWorkspace,
+      fetchWorkspaces
     }}>
       {children}
     </AuthContext.Provider>

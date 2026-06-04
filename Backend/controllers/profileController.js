@@ -2,8 +2,15 @@ const User = require("../models/users");
 const Link = require("../models/Link");
 const QRCode = require("../models/QRCode");
 const Analytics = require("../models/Analytics");
+const Conversion = require("../models/Conversion");
+const ConversionPixel = require("../models/ConversionPixel");
+const Contact = require("../models/Contact");
+const TokenBlacklist = require("../models/TokenBlacklist");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const mongoose = require("mongoose");
+const sendEmail = require("../utils/sendEmail");
+const { verificationEmailTemplate } = require("../utils/emailTemplates");
 
 // Get current user profile
 exports.getProfile = async (req, res) => {
@@ -162,13 +169,32 @@ exports.updateEmail = async (req, res) => {
       });
     }
 
+    // Set email and require re-verification
     user.email = email;
+    user.emailVerified = false;
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await user.save();
+
+    // Send verification email to the NEW email address
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
+      await sendEmail(
+        email,
+        "Verify your new email address - Shrinkly",
+        verificationEmailTemplate(user.username, verificationUrl)
+      );
+    } catch (emailErr) {
+      console.error("Failed to send verification email:", emailErr.message);
+    }
 
     return res.json({
       success: true,
-      message: "Email updated successfully",
-      email: user.email
+      message: "Email updated. Please verify your new email address.",
+      email: user.email,
+      requiresVerification: true
     });
   } catch (error) {
     console.error("Error updating email:", error);
@@ -253,6 +279,14 @@ exports.deleteAccount = async (req, res) => {
       });
     }
 
+    // Demo account protection
+    if (user.email === "demo@shrinkly.com") {
+      return res.status(403).json({
+        success: false,
+        message: "Destructive actions are prohibited on the demo account."
+      });
+    }
+
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -262,10 +296,16 @@ exports.deleteAccount = async (req, res) => {
       });
     }
 
-    // Delete all user's data
-    await Link.deleteMany({ userId: req.userId });
+    // Delete all user's data in proper order
+    const userLinks = await Link.find({ userId: req.userId }).select('_id');
+    const linkIds = userLinks.map(l => l._id);
+    await Analytics.deleteMany({ linkId: { $in: linkIds } });
+    await Conversion.deleteMany({ linkId: { $in: linkIds } });
+    await ConversionPixel.deleteMany({ linkId: { $in: linkIds } });
     await QRCode.deleteMany({ userId: req.userId });
-    await Analytics.deleteMany({ userId: req.userId });
+    await Contact.deleteMany({ email: user.email });
+    await TokenBlacklist.deleteMany({ userId: req.userId });
+    await Link.deleteMany({ userId: req.userId });
     await User.findByIdAndDelete(req.userId);
 
     return res.json({

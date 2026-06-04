@@ -490,7 +490,30 @@
   .analytics-root-page { padding: 1.5rem; }
   .analytics-header { flex-direction: column; align-items: flex-start; }
   .analytics-header-right { width: 100%; flex-wrap: wrap; }
+  .preset-selector-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .btn-preset {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.5rem;
+  }
+  .filter-item {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .filter-item select {
+    width: 100%;
+  }
   .date-picker-bar { flex-direction: column; align-items: stretch; }
+  .date-input-wrap {
+    width: 100%;
+  }
+  .date-input-wrap input {
+    width: 100%;
+  }
   .btn-analytics-apply { width: 100%; }
   .insights-grid-list { grid-template-columns: 1fr; }
   .reports-download-bar { flex-direction: column; gap: 1.5rem; text-align: center; }

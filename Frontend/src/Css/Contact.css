@@ -297,6 +297,29 @@
   .submissions-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 768px) {
+  .contact-container,
+  .contact-section,
+  .submissions-section {
+    padding: 1.5rem 1rem;
+  }
+  
+  .contact-header {
+    padding: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .btn-submissions-toggle {
+    width: 100%;
+  }
+
+  .contact-form-container {
+    padding: 1.5rem;
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

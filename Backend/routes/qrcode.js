@@ -8,10 +8,15 @@ const {
   deleteQRCode,
   trackDownload,
   getQRCodeStats,
-  bulkDeleteQRCodes
-} = require("../controllers/qrCodeController");
+  bulkDeleteQRCodes,
+  recordQRScan
+} = require("../controllers/qrController");
 
-// All routes require authentication
+// Public QR Scan tracking routes (no authentication required)
+router.get("/:id/scan", recordQRScan);
+router.post("/:id/scan", recordQRScan);
+
+// All subsequent routes require authentication
 router.use(auth);
 
 // QR Code CRUD routes
@@ -19,10 +24,11 @@ router.post("/", createQRCode);
 router.get("/", getAllQRCodes);
 router.get("/stats", getQRCodeStats);
 router.get("/:id", getQRCodeById);
+router.patch("/:id", updateQRCode);
 router.put("/:id", updateQRCode);
 router.delete("/:id", deleteQRCode);
 
-// Track download (can be called without auth too)
+// Track download
 router.post("/:id/download", trackDownload);
 
 // Bulk operations

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { linksAPI } from "../services/api";
 import "../Css/Landing.css";
@@ -146,7 +146,7 @@ export default function Landing() {
 
   return (
     <div className="landing-root">
-      <Toaster position="top-right" />
+      
       
       {/* Navigation */}
       <nav className="landing-nav">

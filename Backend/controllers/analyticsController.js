@@ -2,6 +2,8 @@ const Analytics = require("../models/Analytics");
 const Link = require("../models/Link");
 const UAParser = require("ua-parser-js");
 const geoip = require("geoip-lite");
+const { detectBot } = require("../utils/botDetector");
+const { generateVisitorHash, hashIP } = require("../utils/visitorHash");
 
 // Helper function to parse user agent
 const parseUserAgent = (userAgent) => {
@@ -58,15 +60,41 @@ exports.recordClick = async (linkId, shortCode, req, isQrScan = false) => {
     const { device, browser, os } = parseUserAgent(userAgent);
     const referrerDomain = extractReferrerDomain(referrer);
     
+    // Bot detection
+    const { isBot, botName } = detectBot(userAgent);
+    
+    // Visitor fingerprinting
+    const visitorHash = generateVisitorHash(ip, userAgent);
+    
+    // Check if this visitor has clicked this link before
+    const existingVisit = await Analytics.findOne({
+      linkId,
+      visitorHash
+    });
+    const isReturning = !!existingVisit;
+    
+    // Extract UTM parameters from request
+    const utmParams = {
+      utm_source: req.query.utm_source || null,
+      utm_medium: req.query.utm_medium || null,
+      utm_campaign: req.query.utm_campaign || null,
+      utm_term: req.query.utm_term || null,
+      utm_content: req.query.utm_content || null
+    };
+    
     // Geo-IP lookup using geoip-lite
     const geo = geoip.lookup(ip);
     const country = geo?.country || "Unknown";
     const city = geo?.city || "Unknown";
     
+    // Look up the link's userId
+    const linkDoc = await Link.findById(linkId).select('userId');
+    
     const analyticsEntry = new Analytics({
       linkId,
+      userId: linkDoc?.userId,
       shortCode,
-      ip,
+      ipHash: hashIP(ip),
       userAgent,
       device,
       browser,
@@ -76,6 +104,11 @@ exports.recordClick = async (linkId, shortCode, req, isQrScan = false) => {
       referrer,
       referrerDomain,
       isQrScan,
+      isBot,
+      botName,
+      visitorHash,
+      isReturning,
+      utmParams,
       clickedAt: new Date()
     });
     
@@ -91,7 +124,7 @@ exports.recordClick = async (linkId, shortCode, req, isQrScan = false) => {
 exports.getLinkAnalytics = async (req, res) => {
   try {
     const { linkId } = req.params;
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, includeBots = "true" } = req.query;
     
     let dateFilter = {};
     if (startDate || endDate) {
@@ -106,13 +139,31 @@ exports.getLinkAnalytics = async (req, res) => {
       return res.status(404).json({ success: false, message: "Link not found" });
     }
     
-    const query = { linkId, ...dateFilter };
+    // Filter bots if requested
+    const excludeBots = includeBots === "false" || link.excludeBotTraffic;
+    const query = excludeBots 
+      ? { linkId, ...dateFilter, isBot: false }
+      : { linkId, ...dateFilter };
     
     // Get total clicks
     const totalClicks = await Analytics.countDocuments(query);
     
-    // Get unique visitors (by IP)
-    const uniqueVisitors = await Analytics.distinct("ip", query);
+    // Get total clicks including bots (for reference)
+    const totalClicksIncludingBots = await Analytics.countDocuments({ linkId, ...dateFilter });
+    
+    // Get bot traffic stats
+    const botStats = await Analytics.aggregate([
+      { $match: { linkId, ...dateFilter, isBot: true } },
+      { $group: { _id: "$botName", count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    
+    // Get unique visitors
+    const uniqueVisitors = await Analytics.distinct("visitorHash", query);
+    
+    // Get returning vs new visitors
+    const returningVisitors = await Analytics.countDocuments({ ...query, isReturning: true });
+    const newVisitors = uniqueVisitors.length - returningVisitors;
     
     // Get QR scans
     const qrScans = await Analytics.countDocuments({ ...query, isQrScan: true });
@@ -148,6 +199,15 @@ exports.getLinkAnalytics = async (req, res) => {
       { $limit: 10 }
     ]);
     
+    // Get UTM breakdown
+    const utmSourceStats = await Analytics.aggregate([
+      { $match: query },
+      { $group: { _id: "$utmParams.utm_source", count: { $sum: 1 } } },
+      { $match: { _id: { $ne: null } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+    
     // Get click trends (by day)
     const clickTrends = await Analytics.aggregate([
       { $match: query },
@@ -165,7 +225,12 @@ exports.getLinkAnalytics = async (req, res) => {
       success: true,
       analytics: {
         totalClicks,
+        totalClicksIncludingBots,
+        botTraffic: totalClicksIncludingBots - totalClicks,
         uniqueVisitors: uniqueVisitors.length,
+        returningVisitors,
+        newVisitors,
+        conversionRate: totalClicks > 0 ? (returningVisitors / totalClicks * 100).toFixed(2) : 0,
         qrScans,
         deviceCount: deviceStats.length,
         countryCount: countryStats.length,
@@ -174,6 +239,8 @@ exports.getLinkAnalytics = async (req, res) => {
         browsers: browserStats.map(b => ({ name: b._id, clicks: b.count })),
         countries: countryStats.map(c => ({ name: c._id, clicks: c.count })),
         referrers: referrerStats.map(r => ({ name: r._id, clicks: r.count })),
+        utmSources: utmSourceStats.map(u => ({ source: u._id, clicks: u.count })),
+        botBreakdown: botStats.map(b => ({ botName: b._id, hits: b.count })),
         clickTrends: clickTrends.map(t => ({ date: t._id, clicks: t.count }))
       }
     });
@@ -186,10 +253,23 @@ exports.getLinkAnalytics = async (req, res) => {
 // Get overall analytics for all links
 exports.getOverallAnalytics = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, includeBots = "true", workspaceId } = req.query;
     
+    let linkQuery = {};
+    if (workspaceId && workspaceId !== "personal") {
+      const { getWorkspaceMember } = require("../middleware/workspaceAuth");
+      const memberInfo = await getWorkspaceMember(workspaceId, req.userId);
+      if (!memberInfo || memberInfo.status !== "active") {
+        return res.status(403).json({ success: false, message: "Access denied. Not an active member of this workspace." });
+      }
+      linkQuery.workspaceId = workspaceId;
+    } else {
+      linkQuery.userId = req.userId;
+      linkQuery.workspaceId = null;
+    }
+
     // Get user's links first
-    const userLinks = await Link.find({ userId: req.userId }).select("_id");
+    const userLinks = await Link.find(linkQuery).select("_id excludeBotTraffic");
     const userLinkIds = userLinks.map(l => l._id);
     
     if (userLinkIds.length === 0) {
@@ -198,16 +278,19 @@ exports.getOverallAnalytics = async (req, res) => {
         analytics: {
           totalClicks: 0,
           uniqueVisitors: 0,
+          returningVisitors: 0,
           qrScans: 0,
           deviceCount: 0,
           countryCount: 0,
           referrerCount: 0,
+          botTraffic: 0,
           devices: [],
           browsers: [],
           countries: [],
           referrers: [],
           clickTrends: [],
-          topLinks: []
+          topLinks: [],
+          botBreakdown: []
         }
       });
     }
@@ -219,25 +302,46 @@ exports.getOverallAnalytics = async (req, res) => {
       if (endDate) dateFilter.clickedAt.$lte = new Date(endDate + "T23:59:59.999Z");
     }
     
-    // Get total clicks
-    const totalClicks = await Analytics.countDocuments(dateFilter);
+    // Determine if we should filter bots (respect per-link settings)
+    const shouldExcludeBots = includeBots === "false";
+    const filterQuery = shouldExcludeBots ? { ...dateFilter, isBot: false } : dateFilter;
+    
+    // Get total clicks (with and without bots)
+    const totalClicks = await Analytics.countDocuments(filterQuery);
+    const totalClicksWithBots = await Analytics.countDocuments(dateFilter);
+    const botTraffic = totalClicksWithBots - totalClicks;
     
     // Get unique visitors
-    const uniqueVisitors = await Analytics.distinct("ip", dateFilter);
+    const uniqueVisitors = await Analytics.distinct("visitorHash", filterQuery);
+    
+    // Get returning visitors
+    const returningStats = await Analytics.aggregate([
+      { $match: filterQuery },
+      { $group: { _id: "$visitorHash", count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } }
+    ]);
+    const returningVisitors = returningStats.length;
     
     // Get QR scans
-    const qrScans = await Analytics.countDocuments({ ...dateFilter, isQrScan: true });
+    const qrScans = await Analytics.countDocuments({ ...filterQuery, isQrScan: true });
+    
+    // Get bot breakdown
+    const botStats = await Analytics.aggregate([
+      { $match: { ...dateFilter, isBot: true } },
+      { $group: { _id: "$botName", count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
     
     // Get device breakdown
     const deviceStats = await Analytics.aggregate([
-      { $match: dateFilter },
+      { $match: filterQuery },
       { $group: { _id: "$device", count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
     
     // Get browser breakdown
     const browserStats = await Analytics.aggregate([
-      { $match: dateFilter },
+      { $match: filterQuery },
       { $group: { _id: "$browser", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
@@ -245,7 +349,7 @@ exports.getOverallAnalytics = async (req, res) => {
     
     // Get country breakdown
     const countryStats = await Analytics.aggregate([
-      { $match: dateFilter },
+      { $match: filterQuery },
       { $group: { _id: "$country", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
@@ -253,7 +357,7 @@ exports.getOverallAnalytics = async (req, res) => {
     
     // Get referrer breakdown
     const referrerStats = await Analytics.aggregate([
-      { $match: dateFilter },
+      { $match: filterQuery },
       { $group: { _id: "$referrerDomain", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
@@ -261,7 +365,7 @@ exports.getOverallAnalytics = async (req, res) => {
     
     // Get click trends (by day)
     const clickTrends = await Analytics.aggregate([
-      { $match: dateFilter },
+      { $match: filterQuery },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$clickedAt" } },
@@ -274,7 +378,7 @@ exports.getOverallAnalytics = async (req, res) => {
     
     // Get top performing links
     const topLinks = await Analytics.aggregate([
-      { $match: dateFilter },
+      { $match: filterQuery },
       { $group: { _id: "$linkId", clicks: { $sum: 1 } } },
       { $sort: { clicks: -1 } },
       { $limit: 5 },
@@ -294,10 +398,12 @@ exports.getOverallAnalytics = async (req, res) => {
       analytics: {
         totalClicks,
         uniqueVisitors: uniqueVisitors.length,
+        returningVisitors,
         qrScans,
         deviceCount: deviceStats.length,
         countryCount: countryStats.length,
         referrerCount: referrerStats.length,
+        botTraffic,
         devices: deviceStats.map(d => ({ name: d._id, clicks: d.count })),
         browsers: browserStats.map(b => ({ name: b._id, clicks: b.count })),
         countries: countryStats.map(c => ({ name: c._id, clicks: c.count })),
@@ -308,7 +414,8 @@ exports.getOverallAnalytics = async (req, res) => {
           clicks: l.clicks,
           shortUrl: l.linkDetails ? `${l.linkDetails.domain}/${l.linkDetails.shortCode}` : "Unknown",
           originalUrl: l.linkDetails?.originalUrl || "Unknown"
-        }))
+        })),
+        botBreakdown: botStats.map(b => ({ name: b._id || "Unknown", clicks: b.count }))
       }
     });
   } catch (error) {
@@ -320,10 +427,10 @@ exports.getOverallAnalytics = async (req, res) => {
 // Get hourly heatmap data
 exports.getHeatmapData = async (req, res) => {
   try {
-    const { linkId, startDate, endDate } = req.query;
+    const { linkId, startDate, endDate, includeBots = "false" } = req.query;
     
     // Get user's links
-    const userLinks = await Link.find({ userId: req.userId }).select("_id");
+    const userLinks = await Link.find({ userId: req.userId }).select("_id excludeBotTraffic");
     const userLinkIds = userLinks.map(l => l._id);
     
     let query = { linkId: { $in: userLinkIds } };
@@ -339,6 +446,11 @@ exports.getHeatmapData = async (req, res) => {
       query.clickedAt = {};
       if (startDate) query.clickedAt.$gte = new Date(startDate);
       if (endDate) query.clickedAt.$lte = new Date(endDate + "T23:59:59.999Z");
+    }
+    
+    // Exclude bots by default (heatmap should show human activity patterns)
+    if (includeBots === "false") {
+      query.isBot = false;
     }
     
     // Get clicks by day of week and hour
@@ -374,10 +486,10 @@ exports.getHeatmapData = async (req, res) => {
 // Get AI insights (simple analysis)
 exports.getInsights = async (req, res) => {
   try {
-    const { linkId } = req.query;
+    const { linkId, includeBots = "false" } = req.query;
     
     // Get user's links
-    const userLinks = await Link.find({ userId: req.userId }).select("_id");
+    const userLinks = await Link.find({ userId: req.userId }).select("_id excludeBotTraffic");
     const userLinkIds = userLinks.map(l => l._id);
     
     let query = { linkId: { $in: userLinkIds } };
@@ -388,6 +500,11 @@ exports.getInsights = async (req, res) => {
         return res.status(404).json({ success: false, message: "Link not found" });
       }
       query.linkId = linkId;
+    }
+    
+    // Exclude bots by default from insights
+    if (includeBots === "false") {
+      query.isBot = false;
     }
     
     // Get best performing day
@@ -464,10 +581,10 @@ exports.getInsights = async (req, res) => {
 // Export analytics data
 exports.exportAnalytics = async (req, res) => {
   try {
-    const { linkId, startDate, endDate, format } = req.query;
+    const { linkId, startDate, endDate, format, includeBots = "false" } = req.query;
     
     // Get user's links
-    const userLinks = await Link.find({ userId: req.userId }).select("_id");
+    const userLinks = await Link.find({ userId: req.userId }).select("_id excludeBotTraffic");
     const userLinkIds = userLinks.map(l => l._id);
     
     let query = { linkId: { $in: userLinkIds } };
@@ -485,8 +602,13 @@ exports.exportAnalytics = async (req, res) => {
       if (endDate) query.clickedAt.$lte = new Date(endDate + "T23:59:59.999Z");
     }
     
+    // Exclude bots by default from export
+    if (includeBots === "false") {
+      query.isBot = false;
+    }
+    
     const analytics = await Analytics.find(query)
-      .populate("linkId", "originalUrl shortCode domain")
+      .populate("linkId", "originalUrl shortCode domain utmParams")
       .sort({ clickedAt: -1 })
       .limit(10000);
     
@@ -499,6 +621,15 @@ exports.exportAnalytics = async (req, res) => {
       country: a.country,
       referrer: a.referrerDomain,
       isQrScan: a.isQrScan,
+      isBot: a.isBot,
+      botName: a.botName || null,
+      visitorHash: a.visitorHash || null,
+      isReturning: a.isReturning,
+      utmSource: a.utmParams?.utm_source || null,
+      utmMedium: a.utmParams?.utm_medium || null,
+      utmCampaign: a.utmParams?.utm_campaign || null,
+      utmTerm: a.utmParams?.utm_term || null,
+      utmContent: a.utmParams?.utm_content || null,
       clickedAt: a.clickedAt.toISOString()
     }));
     
@@ -508,3 +639,6 @@ exports.exportAnalytics = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+exports.parseUserAgent = parseUserAgent;
+exports.extractReferrerDomain = extractReferrerDomain;

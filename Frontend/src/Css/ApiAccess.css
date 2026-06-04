@@ -1,0 +1,432 @@
+/* API Access Styling Sheets */
+
+.api-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.api-header {
+  margin-bottom: 2rem;
+}
+
+.api-plan-badge {
+  display: inline-block;
+  background: var(--primary-bg);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  color: var(--primary-color);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.35rem 0.75rem;
+  border-radius: 50px;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.api-header h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.api-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  max-width: 700px;
+  line-height: 1.5;
+}
+
+/* Upgrade Card */
+.upgrade-card-api {
+  margin-top: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 3rem 2rem;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.upgrade-card-api .icon-badge {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.upgrade-card-api h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.upgrade-card-api p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+
+.btn-upgrade-redirect {
+  padding: 0.85rem 2rem;
+  font-size: 1rem;
+}
+
+/* Grid Layout */
+.api-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .api-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.api-main-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Card titles */
+.create-key-card h3,
+.keys-list-card h3,
+.doc-card h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+
+.create-key-form {
+  margin-top: 0.5rem;
+}
+
+.form-group-api {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-group-api {
+  display: flex;
+  gap: 0.75rem;
+}
+
+@media (max-width: 576px) {
+  .input-group-api {
+    flex-direction: column;
+  }
+}
+
+.input-group-api .input-ds {
+  flex: 1;
+}
+
+.api-keys-skeleton {
+  height: 140px;
+  width: 100%;
+}
+
+.key-preview-font {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Actions list */
+.action-buttons-group {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-revoke-api {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--error-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-revoke-api:hover {
+  border-color: var(--error-color);
+  background: var(--error-bg);
+}
+
+.revoked-lbl {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.btn-delete-api {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  padding: 0.25rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-delete-api:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Docs Panel styling */
+.doc-card {
+  padding: 1.5rem;
+}
+
+.doc-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.auth-header-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+.auth-or-divider {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.endpoint-selector-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.endpoint-selector-tabs .tab-btn {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  text-align: left;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.endpoint-selector-tabs .tab-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.endpoint-selector-tabs .tab-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+.doc-language-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0.75rem;
+}
+
+.doc-language-tabs .lang-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.doc-language-tabs .lang-btn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.code-block-container {
+  position: relative;
+  border-radius: 10px;
+  background: #0f141c;
+  border: 1px solid #1f2937;
+  overflow: hidden;
+}
+
+.code-display {
+  margin: 0;
+  padding: 1rem;
+  padding-bottom: 3.5rem;
+  overflow-x: auto;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem;
+  color: #abb2bf;
+  line-height: 1.5;
+  max-height: 300px;
+}
+
+.btn-copy-code {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-copy-code:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Disclosure Modal specifics */
+.key-disclosure-modal {
+  max-width: 550px;
+  text-align: center;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.key-disclosure-modal .warning-icon {
+  font-size: 3rem;
+  color: var(--warning-color);
+  line-height: 1;
+}
+
+.key-disclosure-modal h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.key-disclosure-modal p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.disclosure-box {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.disclosure-box .lbl {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.raw-key-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 576px) {
+  .raw-key-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 768px) {
+  .api-page {
+    padding: 1.5rem 1rem;
+  }
+  
+  .api-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .upgrade-card-api {
+    padding: 2rem 1.25rem;
+  }
+
+  .upgrade-card-api h2 {
+    font-size: 1.3rem;
+  }
+
+  .doc-card {
+    padding: 1.25rem;
+  }
+
+  .endpoint-selector-tabs {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .endpoint-selector-tabs .tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+.raw-key-value {
+  flex: 1;
+  font-family: monospace;
+  font-size: 0.825rem;
+  color: var(--primary-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  border-radius: 6px;
+  word-break: break-all;
+}
+
+.btn-close-disclosure {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}

@@ -1,13 +1,14 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
     <footer className="footer">
-      <p>&copy; 2025 Shrinkly. All rights reserved.</p>
+      <p>&copy; {new Date().getFullYear()} Shrinkly. All rights reserved.</p>
       <div className="footer-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Service</a>
-        <a href="#">Support</a>
+        <Link to="/privacy">Privacy Policy</Link>
+        <Link to="/terms">Terms of Service</Link>
+        <Link to="/contact">Support</Link>
       </div>
     </footer>
   );

@@ -3,10 +3,15 @@ import "../Css/Analytics.css";
 import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
 import { Line, Pie, Bar } from "react-chartjs-2";
-import { Chart as ChartJS } from "chart.js/auto";
-import { linksAPI, analyticsAPI } from "../services/api";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler } from "chart.js";
+import toast from "react-hot-toast";
+import { linksAPI, analyticsAPI, smartAPI } from "../services/api";
+import { useAuth } from "../context/AuthContext";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
 
 export default function Analytics() {
+  const { activeWorkspace, workspaces } = useAuth();
   const [link, setLink] = useState("");  // Selected link ID
   const [links, setLinks] = useState([]); // All links for dropdown
   const [startDate, setStartDate] = useState("");  // Start date
@@ -45,21 +50,28 @@ export default function Analytics() {
   });
   const [heatmap, setHeatmap] = useState([]);
 
+  // Smart Insights state
+  const [smartBestTime, setSmartBestTime] = useState(null);
+  const [smartAnomalies, setSmartAnomalies] = useState([]);
+  const [smartLoading, setSmartLoading] = useState(false);
+
   // Fetch initial list of links
   useEffect(() => {
     fetchLinks();
-  }, []);
+    setLink(""); // Reset selected link filter on workspace change
+  }, [activeWorkspace]);
 
-  // Fetch statistics when date ranges or link is changed
+  // Fetch statistics when date ranges, link, or workspace is changed
   useEffect(() => {
     fetchAnalytics();
     fetchInsights();
     fetchHeatmap();
-  }, [link, startDate, endDate]);
+    fetchSmartData();
+  }, [link, startDate, endDate, activeWorkspace]);
 
   const fetchLinks = async () => {
     try {
-      const data = await linksAPI.getAll();
+      const data = await linksAPI.getAll({ limit: 100, workspaceId: activeWorkspace });
       if (data.success) {
         setLinks(data.links);
       }
@@ -95,7 +107,7 @@ export default function Analytics() {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { workspaceId: activeWorkspace };
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
 
@@ -131,7 +143,7 @@ export default function Analytics() {
 
   const fetchInsights = async () => {
     try {
-      const params = {};
+      const params = { workspaceId: activeWorkspace };
       if (link) params.linkId = link;
       const data = await analyticsAPI.getInsights(params);
       if (data.success) {
@@ -144,7 +156,7 @@ export default function Analytics() {
 
   const fetchHeatmap = async () => {
     try {
-      const params = {};
+      const params = { workspaceId: activeWorkspace };
       if (link) params.linkId = link;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
@@ -156,6 +168,21 @@ export default function Analytics() {
     } catch (error) {
       console.error("Error fetching heatmap:", error);
     }
+  };
+
+  const fetchSmartData = async () => {
+    setSmartLoading(true);
+    try {
+      const [bestTimeRes, anomalyRes] = await Promise.all([
+        smartAPI.getBestTime().catch(() => null),
+        smartAPI.getAnomalies().catch(() => null),
+      ]);
+      if (bestTimeRes?.success) setSmartBestTime(bestTimeRes);
+      if (anomalyRes?.success) setSmartAnomalies(anomalyRes.anomalies || []);
+    } catch (err) {
+      console.error("Error fetching smart data:", err);
+    }
+    setSmartLoading(false);
   };
 
   // Client-side filtering logic
@@ -192,7 +219,7 @@ export default function Analytics() {
   const clickThroughRate = totalClicksCalculated > 0 
     ? ((uniqueVisitorsCalculated / totalClicksCalculated) * 100).toFixed(1) 
     : "0.0";
-  const simulatedBounceRate = totalClicksCalculated > 0 ? "24.6%" : "0.0%";
+  const bounceRate = rawStats.bounceRate != null ? rawStats.bounceRate.toFixed(1) + '%' : 'N/A';
 
   // Chart configuration: 1. Click growth trend area chart
   const clickTrendsChartData = {
@@ -249,7 +276,10 @@ export default function Analytics() {
       },
       {
         label: "System Weight",
-        data: devices.map(d => d.clicks),
+        data: browsers.slice(0, 5).map((b, i) => {
+          const matchingDevice = devices[i];
+          return matchingDevice ? matchingDevice.clicks : 0;
+        }),
         backgroundColor: "#ec4899",
       }
     ]
@@ -275,7 +305,7 @@ export default function Analytics() {
 
   const handleExportCSV = async () => {
     try {
-      const params = {};
+      const params = { workspaceId: activeWorkspace };
       if (link) params.linkId = link;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
@@ -313,7 +343,12 @@ export default function Analytics() {
           {/* Dashboard Header */}
           <header className="analytics-header">
             <div className="analytics-header-left">
-              <h1>SaaS Analytics Desk</h1>
+              <h1>
+                SaaS Analytics Desk{" "}
+                {workspaces.find((w) => w._id === activeWorkspace)
+                  ? `(${workspaces.find((w) => w._id === activeWorkspace).name})`
+                  : "(Personal)"}
+              </h1>
               <p>Study redirect channels, visitor setups, and smart insights.</p>
             </div>
             
@@ -421,7 +456,7 @@ export default function Analytics() {
               {loading ? (
                 <div className="skeleton-cell skeleton-pulse" style={{ height: "24px", width: "70px", margin: "4px auto 0", borderRadius: "4px" }} />
               ) : (
-                <div className="stat-val">{simulatedBounceRate}</div>
+                <div className="stat-val">{bounceRate}</div>
               )}
             </div>
             <div className="stat-card glass-panel-analytics">
@@ -600,8 +635,11 @@ export default function Analytics() {
                 <div className="insight-card-item">
                   <div className="insight-card-icon">⚡</div>
                   <div className="insight-card-body">
-                    <h4>Top Campaign Anchor</h4>
-                    <p>Your links perform best around <strong>{insights.bestHour !== "Not enough data" ? insights.bestHour : "7 PM - 10 PM"}</strong>. Focus releases during this window.</p>
+                    <h4>Best Posting Time</h4>
+                    <p>{smartBestTime?.bestDay && smartBestTime?.bestHour
+                      ? <>{smartBestTime.explanation}</>
+                      : <>Your links perform best around <strong>{insights.bestHour !== "Not enough data" ? insights.bestHour : "7 PM - 10 PM"}</strong>. Focus releases during this window.</>}
+                    </p>
                   </div>
                 </div>
 
@@ -617,7 +655,12 @@ export default function Analytics() {
                   <div className="insight-card-icon">📱</div>
                   <div className="insight-card-body">
                     <h4>Device Optimization Alert</h4>
-                    <p>Mobile visitors represent <strong>68% of overall traffic</strong>. Ensure landing targets are fully optimized for viewport layout screens.</p>
+                    <p>Mobile visitors represent <strong>{(() => {
+                      const totalDeviceClicks = devices.reduce((sum, d) => sum + d.clicks, 0);
+                      const mobileEntry = devices.find(d => d.name.toLowerCase() === 'mobile');
+                      if (!mobileEntry || totalDeviceClicks === 0) return 'N/A';
+                      return ((mobileEntry.clicks / totalDeviceClicks) * 100).toFixed(1) + '%';
+                    })()} of overall traffic</strong>. Ensure landing targets are fully optimized for viewport layout screens.</p>
                   </div>
                 </div>
 
@@ -625,9 +668,30 @@ export default function Analytics() {
                   <div className="insight-card-icon">🏷️</div>
                   <div className="insight-card-body">
                     <h4>Tag Weight Performance</h4>
-                    <p>Assets marked with <strong>marketing tags</strong> have outperformed standard listings by 32% in conversions.</p>
+                    <p>{(() => {
+                      const qrClicks = rawStats.qrScans || 0;
+                      const directClicks = totalClicksCalculated - qrClicks;
+                      if (directClicks <= 0 || qrClicks <= 0) return 'Not enough data to compare QR vs direct click performance.';
+                      const diff = ((qrClicks - directClicks) / directClicks * 100).toFixed(1);
+                      return `QR code scans have ${Number(diff) >= 0 ? 'outperformed' : 'underperformed'} direct clicks by ${Math.abs(Number(diff))}%.`;
+                    })()}</p>
                   </div>
                 </div>
+
+                {/* Anomaly Detection */}
+                {smartAnomalies.length > 0 && (
+                  <div className="insight-card-item" style={{ borderLeft: "3px solid var(--warning-color)" }}>
+                    <div className="insight-card-icon">🔥</div>
+                    <div className="insight-card-body">
+                      <h4>Traffic Anomaly Detected</h4>
+                      {smartAnomalies.slice(0, 3).map((a, i) => (
+                        <p key={i} style={{ marginBottom: "0.25rem" }}>
+                          <strong>/{a.slug}</strong> — {a.message}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

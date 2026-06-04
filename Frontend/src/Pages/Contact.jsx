@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
+import { useAuth } from "../context/AuthContext";
 import { contactAPI } from "../services/api";
 import "../Css/Contact.css";
 
 export default function Contact() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -21,6 +23,18 @@ export default function Contact() {
   useEffect(() => {
     fetchContacts();
   }, []);
+
+  // Prefill details if user is logged in
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: prev.fullName || user.displayName || user.username || "",
+        email: prev.email || user.email || "",
+        phone: prev.phone || user.phone || ""
+      }));
+    }
+  }, [user]);
 
   const fetchContacts = async () => {
     try {

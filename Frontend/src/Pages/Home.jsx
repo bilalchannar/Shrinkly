@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { Line } from "react-chartjs-2";
-import { Chart as ChartJS } from "chart.js/auto";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -126,19 +128,13 @@ export default function Home() {
     toast.success("Copied to clipboard!");
   };
 
-  // Calculate clicks growth comparison
+  // Calculate clicks for this week from available trend data
   const calculateWeeklyGrowth = () => {
-    if (clickTrends.length === 0) return { percent: "+0%", positive: true };
+    if (clickTrends.length === 0) return { thisWeek: 0, hasData: false };
     const totalClicksThisWeek = clickTrends.reduce((sum, day) => sum + day.clicks, 0);
-    // Simulate a baseline comparison for visual excellence (this week vs last week)
-    const simulatedLastWeek = Math.max(10, Math.floor(totalClicksThisWeek * 0.88));
-    const difference = totalClicksThisWeek - simulatedLastWeek;
-    const growthPercent = ((difference / simulatedLastWeek) * 100).toFixed(1);
     return {
       thisWeek: totalClicksThisWeek,
-      lastWeek: simulatedLastWeek,
-      percent: difference >= 0 ? `+${growthPercent}%` : `${growthPercent}%`,
-      positive: difference >= 0
+      hasData: true
     };
   };
 
@@ -180,7 +176,7 @@ export default function Home() {
       <Sidebar />
       <div className="main-content">
         <div className="dashboard-root-page">
-          <Toaster position="top-right" />
+          
           
           {/* Dashboard Header */}
           <header className="dashboard-welcome">
@@ -293,9 +289,9 @@ export default function Home() {
                     <h2>📊 Click Growth Trend</h2>
                     <p>Total clicks tracked during the last 7 days.</p>
                   </div>
-                  {!loading && (
-                    <div className={`growth-badge ${growthMetrics.positive ? "positive" : "negative"}`}>
-                      {growthMetrics.percent} this week
+                  {!loading && growthMetrics.hasData && (
+                    <div className="growth-badge positive">
+                      {growthMetrics.thisWeek} clicks this week
                     </div>
                   )}
                 </div>
@@ -416,7 +412,7 @@ export default function Home() {
               <div className="widget-box glass-container weekly-clicks-widget">
                 <div className="widget-header">
                   <h2>📅 Weekly Progress</h2>
-                  <p>Comparing your redirect volume.</p>
+                  <p>Your redirect volume this week.</p>
                 </div>
                 <div className="comparison-metric">
                   <div className="comparison-row">
@@ -427,13 +423,9 @@ export default function Home() {
                     <div
                       className="progress-bar-fill"
                       style={{
-                        width: `${Math.min(100, Math.max(10, (growthMetrics.thisWeek / (growthMetrics.thisWeek + growthMetrics.lastWeek || 1)) * 100))}%`
+                        width: `${growthMetrics.hasData ? Math.min(100, Math.max(10, (growthMetrics.thisWeek / Math.max(growthMetrics.thisWeek, 1)) * 100)) : 0}%`
                       }}
                     />
-                  </div>
-                  <div className="comparison-row">
-                    <span className="comparison-label">Simulated Last Week</span>
-                    <span className="comparison-val">{growthMetrics.lastWeek} clicks</span>
                   </div>
                 </div>
               </div>

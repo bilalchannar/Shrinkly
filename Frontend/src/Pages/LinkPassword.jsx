@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+import { linksAPI } from "../services/api";
 
 export default function LinkPassword() {
   const [searchParams] = useSearchParams();
@@ -19,19 +18,14 @@ export default function LinkPassword() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_URL}/links/check-password/${code}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
-      });
-      const data = await res.json();
+      const data = await linksAPI.checkPassword(code, password);
       if (data.success) {
         window.location.href = data.originalUrl;
       } else {
         setError(data.message || "Incorrect password.");
       }
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
