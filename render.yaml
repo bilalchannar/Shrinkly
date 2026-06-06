@@ -28,11 +28,12 @@ services:
         sync: false
 
   # 2. Frontend React SPA Service (Static Site)
-  - type: static
+  - type: web
     name: shrinkly-frontend
+    env: static
     rootDir: Frontend
     buildCommand: npm install && npm run build
-    publishDir: build
+    staticPublishPath: build
     routes:
       # Rewrites all requests to index.html to support React Router client-side routing
       - src: /*
