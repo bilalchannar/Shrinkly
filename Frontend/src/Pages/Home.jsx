@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from "chart.js";
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
 import { useAuth } from "../context/AuthContext";
 import { linksAPI, analyticsAPI, dashboardAPI } from "../services/api";
 import "../Css/Home.css";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export default function Home() {
   const navigate = useNavigate();
