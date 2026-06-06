@@ -540,7 +540,7 @@ exports.getLinkStats = async (req, res) => {
       Link.countDocuments({ ...query, status: "inactive" }),
       Link.countDocuments({ ...query, status: "expired" }),
       Link.aggregate([
-        { $match: query },
+        { $match: { ...query, isDeleted: { $ne: true } } },
         { $group: { _id: null, total: { $sum: "$clicks" } } }
       ])
     ]);

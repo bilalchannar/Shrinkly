@@ -393,6 +393,15 @@ exports.getOverallAnalytics = async (req, res) => {
       { $unwind: { path: "$linkDetails", preserveNullAndEmptyArrays: true } }
     ]);
     
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+    const buildShortUrl = (linkDetails) => {
+      if (!linkDetails) return "Unknown";
+      if (linkDetails.domain && linkDetails.domain !== "shrinkly.link") {
+        return `${baseUrl.startsWith("https") ? "https://" : "http://"}${linkDetails.domain}/${linkDetails.shortCode}`;
+      }
+      return `${baseUrl}/r/${linkDetails.shortCode}`;
+    };
+
     return res.json({
       success: true,
       analytics: {
@@ -412,7 +421,7 @@ exports.getOverallAnalytics = async (req, res) => {
         topLinks: topLinks.map(l => ({
           linkId: l._id,
           clicks: l.clicks,
-          shortUrl: l.linkDetails ? `${l.linkDetails.domain}/${l.linkDetails.shortCode}` : "Unknown",
+          shortUrl: buildShortUrl(l.linkDetails),
           originalUrl: l.linkDetails?.originalUrl || "Unknown"
         })),
         botBreakdown: botStats.map(b => ({ name: b._id || "Unknown", clicks: b.count }))
@@ -567,7 +576,9 @@ exports.getInsights = async (req, res) => {
         bestPlatform: bestPlatform[0]?._id || "Not enough data",
         bestHour: bestHour[0] ? `${bestHour[0]._id}:00` : "Not enough data",
         topLink: topLink[0]?.linkDetails 
-          ? `${topLink[0].linkDetails.domain}/${topLink[0].linkDetails.shortCode}`
+          ? (topLink[0].linkDetails.domain && topLink[0].linkDetails.domain !== "shrinkly.link"
+              ? `${topLink[0].linkDetails.domain}/${topLink[0].linkDetails.shortCode}`
+              : `${process.env.BASE_URL || "http://localhost:5000"}/r/${topLink[0].linkDetails.shortCode}`)
           : "Not enough data",
         unusualPatterns: "None detected"
       }
@@ -612,8 +623,13 @@ exports.exportAnalytics = async (req, res) => {
       .sort({ clickedAt: -1 })
       .limit(10000);
     
+    const analyticsBaseUrl = process.env.BASE_URL || "http://localhost:5000";
     const data = analytics.map(a => ({
-      shortUrl: a.linkId ? `${a.linkId.domain}/${a.linkId.shortCode}` : "Unknown",
+      shortUrl: a.linkId
+        ? (a.linkId.domain && a.linkId.domain !== "shrinkly.link"
+            ? `${analyticsBaseUrl.startsWith("https") ? "https://" : "http://"}${a.linkId.domain}/${a.linkId.shortCode}`
+            : `${analyticsBaseUrl}/r/${a.linkId.shortCode}`)
+        : "Unknown",
       originalUrl: a.linkId?.originalUrl || "Unknown",
       device: a.device,
       browser: a.browser,

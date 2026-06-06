@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
+  username: { type: String, required: false, unique: true, sparse: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false },
   displayName: { type: String, default: "" },
   bio: { type: String, default: "" },
   phone: { type: String, default: "" },
@@ -26,6 +26,14 @@ const userSchema = new mongoose.Schema({
   isAdmin: { type: Boolean, default: false },
   suspended: { type: Boolean, default: false },
   lastLogin: { type: Date, default: null },
+
+  // OAuth specific fields
+  authProvider: { type: String, enum: ["local", "google", "github", "microsoft", "linkedin"], default: "local" },
+  providerId: { type: String, default: null },
+  providers: [{
+    provider: { type: String },
+    providerId: { type: String }
+  }],
 
   // Email verification
   emailVerified: { type: Boolean, default: false },

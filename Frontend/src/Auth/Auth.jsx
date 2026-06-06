@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { FaFacebookF, FaLinkedinIn, FaGoogle, FaGithub } from "react-icons/fa";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authAPI } from "../services/api";
+import toast from "react-hot-toast";
+import SocialLoginButtons from "../Components/SocialLoginButtons";
 import "./Auth.css";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
   const [username, setUsername] = useState("");
@@ -31,28 +33,69 @@ const Auth = () => {
     if (savedEmail) setEmail(savedEmail);
   }, [isAuthenticated, navigate, authLoading]);
 
+  useEffect(() => {
+    const error = searchParams.get("oauthError");
+    if (error) {
+      toast.error(error);
+      setErrors({ login: error });
+    }
+  }, [searchParams]);
+
+  // Clean toggle between states
+  const handleToggleMode = (signUp) => {
+    setIsSignup(signUp);
+    setErrors({});
+    setUsername("");
+    setPassword("");
+    setConfirmPassword("");
+    setUnverifiedEmail("");
+    setSignupSuccess(false);
+  };
+
   // SIGNUP
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
-    // Client-side validation
-    if (!username) newErrors.username = "Username is required";
-    if (!email) newErrors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    // Username validation (3-30 chars, letters/numbers/underscores)
+    if (!username.trim()) {
+      newErrors.username = "Username is required";
+    } else if (username.length < 3 || username.length > 30) {
+      newErrors.username = "Username must be 3–30 characters";
+    } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      newErrors.username = "Username can only contain letters, numbers, and underscores";
+    }
+
+    // Email validation
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email format";
-    if (!password) newErrors.password = "Password is required";
-    else if (password.length < 6)
+    }
+
+    // Password validation (min 6 chars, at least one letter, at least one number)
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
-    if (password !== confirmPassword)
+    } else if (!/[A-Za-z]/.test(password)) {
+      newErrors.password = "Password must contain at least one letter";
+    } else if (!/[0-9]/.test(password)) {
+      newErrors.password = "Password must contain at least one number";
+    }
+
+    // Confirm password
+    if (password !== confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
+    }
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    const selectedPlan = searchParams.get("plan") || "free";
     setLoading(true);
     try {
-      await authAPI.signup(username, email, password);
+      await authAPI.signup(username.trim(), email.trim(), password, selectedPlan);
       // Show verification required message
       setSignupSuccess(true);
       setUsername(""); setEmail(""); setPassword(""); setConfirmPassword("");
@@ -69,24 +112,37 @@ const Auth = () => {
     e.preventDefault();
     const newErrors = {};
 
-    if (!email) newErrors.email = "Email is required";
-    if (!password) newErrors.password = "Password is required";
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required";
+    }
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
     setLoading(true);
     try {
-      const data = await authAPI.login(email, password);
-      login(data.user, data.token);
-      if (rememberMe) localStorage.setItem("rememberedEmail", email);
+      const data = await authAPI.login(email.trim(), password);
+      login(data.user, data.accessToken);
+      if (rememberMe) localStorage.setItem("rememberedEmail", email.trim());
       else localStorage.removeItem("rememberedEmail");
       setErrors({});
-      navigate("/home");
+
+      const selectedPlan = searchParams.get("plan");
+      if (selectedPlan && selectedPlan !== "free") {
+        navigate("/profile", { state: { activeTab: "billing", autoSelectPlan: selectedPlan } });
+      } else {
+        navigate("/home");
+      }
     } catch (err) {
       if (err.message && err.message.includes("verify your email")) {
         // Email not verified - show resend option
-        setUnverifiedEmail(email);
+        setUnverifiedEmail(email.trim());
       } else {
         setErrors({ login: err.message });
       }
@@ -137,7 +193,7 @@ const Auth = () => {
               </p>
               <button
                 className="auth-btn"
-                onClick={() => { setSignupSuccess(false); setIsSignup(false); }}
+                onClick={() => handleToggleMode(false)}
               >
                 Go to Login
               </button>
@@ -146,28 +202,16 @@ const Auth = () => {
           <form onSubmit={handleSignupSubmit}>
             <h1>Create Account</h1>
 
-            <div className="social-container">
-              <a href="https://facebook.com/login" target="_blank" rel="noreferrer">
-                <FaFacebookF size={18} color="#1877F2" />
-              </a>
-              <a href="https://accounts.google.com" target="_blank" rel="noreferrer">
-                <FaGoogle size={18} color="#DB4437" />
-              </a>
-              <a href="https://www.linkedin.com/login" target="_blank" rel="noreferrer">
-                <FaLinkedinIn size={18} color="#0A66C2" />
-              </a>
-              <a href="https://github.com/login" target="_blank" rel="noreferrer">
-                <FaGithub size={18} color="#333" />
-              </a>
-            </div>
+            <SocialLoginButtons mode="signup" />
 
-            <span>or use your email for registration</span>
+            {errors.signup && <div className="general-error-msg">{errors.signup}</div>}
 
             <input
               type="text"
               placeholder="Name"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              className={errors.username ? "input-error" : ""}
               autoComplete="username"
             />
             {errors.username && <div className="error-msg">{errors.username}</div>}
@@ -177,17 +221,17 @@ const Auth = () => {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className={errors.email ? "input-error" : ""}
               autoComplete="email"
             />
-            {(errors.email || errors.signup) && (
-              <div className="error-msg">{errors.email || errors.signup}</div>
-            )}
+            {errors.email && <div className="error-msg">{errors.email}</div>}
 
             <input
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className={errors.password ? "input-error" : ""}
             />
             {errors.password && <div className="error-msg">{errors.password}</div>}
 
@@ -196,6 +240,7 @@ const Auth = () => {
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              className={errors.confirmPassword ? "input-error" : ""}
             />
             {errors.confirmPassword && (
               <div className="error-msg">{errors.confirmPassword}</div>
@@ -204,7 +249,7 @@ const Auth = () => {
             <button type="submit">Sign Up</button>
             <div className="mobile-switch-auth">
               <span>Already have an account? </span>
-              <button type="button" className="btn-link-auth" onClick={() => setIsSignup(false)}>Sign In</button>
+              <button type="button" className="btn-link-auth" onClick={() => handleToggleMode(false)}>Sign In</button>
             </div>
           </form>
           )}
@@ -234,39 +279,29 @@ const Auth = () => {
           <form onSubmit={handleLoginSubmit}>
             <h1>Sign in</h1>
 
-            <div className="social-container">
-              <a href="https://facebook.com/login" target="_blank" rel="noreferrer">
-                <FaFacebookF size={18} color="#1877F2" />
-              </a>
-              <a href="https://accounts.google.com" target="_blank" rel="noreferrer">
-                <FaGoogle size={18} color="#DB4437" />
-              </a>
-              <a href="https://www.linkedin.com/login" target="_blank" rel="noreferrer">
-                <FaLinkedinIn size={18} color="#0A66C2" />
-              </a>
-              <a href="https://github.com/login" target="_blank" rel="noreferrer">
-                <FaGithub size={18} color="#333" />
-              </a>
-            </div>
+            <SocialLoginButtons mode="login" />
 
-            <span>or use your account</span>
+            {errors.login && <div className="general-error-msg">{errors.login}</div>}
 
             <input
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className={errors.email ? "input-error" : ""}
               autoComplete="email"
             />
-            {errors.login && <div className="error-msg">{errors.login}</div>}
+            {errors.email && <div className="error-msg">{errors.email}</div>}
 
             <input
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className={errors.password ? "input-error" : ""}
               autoComplete="current-password"
             />
+            {errors.password && <div className="error-msg">{errors.password}</div>}
 
             <div className="check-row">
               <input
@@ -281,7 +316,7 @@ const Auth = () => {
             <button type="submit" disabled={loading}>{loading ? "Signing in..." : "Sign In"}</button>
             <div className="mobile-switch-auth">
               <span>Don't have an account? </span>
-              <button type="button" className="btn-link-auth" onClick={() => setIsSignup(true)}>Sign Up</button>
+              <button type="button" className="btn-link-auth" onClick={() => handleToggleMode(true)}>Sign Up</button>
             </div>
           </form>
           )}
@@ -292,7 +327,7 @@ const Auth = () => {
             <div className="overlay-panel overlay-left">
               <h1>Welcome Back</h1>
               <p>Please login with your personal info</p>
-              <button className="ghost" onClick={() => setIsSignup(false)}>
+              <button className="ghost" onClick={() => handleToggleMode(false)}>
                 Sign In
               </button>
             </div>
@@ -300,7 +335,7 @@ const Auth = () => {
             <div className="overlay-panel overlay-right">
               <h1>Hello Friend</h1>
               <p>Enter your personal details and start your journey</p>
-              <button className="ghost" onClick={() => setIsSignup(true)}>
+              <button className="ghost" onClick={() => handleToggleMode(true)}>
                 Sign Up
               </button>
             </div>

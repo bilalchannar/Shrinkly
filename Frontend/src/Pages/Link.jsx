@@ -864,10 +864,12 @@ export default function LinkPage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem" }}>
               {/* Export Card */}
-              <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
-                <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--text-primary)" }}>📤 Export Workspace Data</h3>
-                <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1.5rem" }}>Download your datasets instantly in CSV or JSON formats.</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div className="glass-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--text-primary)" }}>📤 Export Workspace Data</h3>
+                  <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1.5rem" }}>Download your datasets instantly in CSV or JSON formats.</p>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "auto" }}>
                   <button className="btn-secondary" onClick={() => handleDownloadExport("links", "csv")} style={{ width: "100%", justifyContent: "center" }}>
                     🔗 Export Links (CSV)
                   </button>
@@ -884,17 +886,19 @@ export default function LinkPage() {
               </div>
 
               {/* Import Card */}
-              <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
-                <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--text-primary)" }}>📥 Bulk Import Links</h3>
-                <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
-                  Upload a CSV file containing your links to create them all at once.
-                </p>
-                <div style={{ marginBottom: "1rem" }}>
-                  <span onClick={handleDownloadSampleCSV} style={{ color: "#7c3aed", cursor: "pointer", textDecoration: "underline", fontSize: "0.85rem", fontWeight: "600" }}>
-                    📄 Download Sample CSV Template
-                  </span>
+              <div className="glass-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--text-primary)" }}>📥 Bulk Import Links</h3>
+                  <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
+                    Upload a CSV file containing your links to create them all at once.
+                  </p>
+                  <div style={{ marginBottom: "1.25rem" }}>
+                    <span onClick={handleDownloadSampleCSV} style={{ color: "#7c3aed", cursor: "pointer", textDecoration: "underline", fontSize: "0.85rem", fontWeight: "600" }}>
+                      📄 Download Sample CSV Template
+                    </span>
+                  </div>
                 </div>
-                <form onSubmit={handleImportCSV} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <form onSubmit={handleImportCSV} style={{ display: "flex", flexDirection: "column", gap: "1rem", marginTop: "auto" }}>
                   <div style={{
                     border: "2px dashed var(--border-color)",
                     borderRadius: "8px",

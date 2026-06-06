@@ -90,6 +90,20 @@ export default function Landing() {
     return () => clearInterval(timer);
   }, [testimonials.length]);
 
+  const handlePricingClick = (planName) => {
+    const planSlug = planName.toLowerCase();
+    if (isAuthenticated()) {
+      if (planSlug === "free") {
+        navigate("/home");
+        toast.success("You are already using Shrinkly's Free plan!");
+      } else {
+        navigate("/profile", { state: { activeTab: "billing", autoSelectPlan: planSlug } });
+      }
+    } else {
+      navigate(`/auth?plan=${planSlug}`);
+    }
+  };
+
   const isValidUrl = (url) => {
     try {
       new URL(url);
@@ -292,7 +306,7 @@ export default function Landing() {
                 </ul>
                 <button
                   className={`btn-pricing ${plan.highlight ? "btn-pricing-highlight" : "btn-pricing-secondary"}`}
-                  onClick={() => navigate("/auth")}
+                  onClick={() => handlePricingClick(plan.name)}
                 >
                   {plan.cta}
                 </button>

@@ -38,11 +38,11 @@ const handleResponse = async (response) => {
 
 // ==================== AUTH ====================
 export const authAPI = {
-  signup: async (username, email, password) => {
+  signup: async (username, email, password, plan = "free") => {
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: "POST",
       headers: getHeaders(false),
-      body: JSON.stringify({ username, email, password }),
+      body: JSON.stringify({ username, email, password, plan }),
     });
     return handleResponse(response);
   },

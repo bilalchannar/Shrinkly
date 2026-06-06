@@ -62,12 +62,18 @@ linkSchema.index({ isDeleted: 1 });
 linkSchema.index({ safetyStatus: 1 });
 
 // Query middleware to exclude soft-deleted links by default
-linkSchema.pre(/^find/, function(next) {
+linkSchema.pre(/^find/, function() {
   const filter = this.getFilter();
   if (filter.isDeleted === undefined) {
     filter.isDeleted = { $ne: true };
   }
-  next();
+});
+
+linkSchema.pre("countDocuments", function() {
+  const filter = this.getFilter();
+  if (filter.isDeleted === undefined) {
+    filter.isDeleted = { $ne: true };
+  }
 });
 
 module.exports = mongoose.model("Link", linkSchema);

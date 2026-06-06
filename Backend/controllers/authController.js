@@ -29,7 +29,7 @@ const safeUser = (user) => ({
 
 // ======================== SIGNUP ========================
 exports.signup = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, plan } = req.body;
 
   try {
     // Check for existing user
@@ -46,13 +46,18 @@ exports.signup = async (req, res) => {
     const verificationToken = generateToken();
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+    // Validate plan
+    const userPlan = ["free", "pro", "enterprise"].includes(plan) ? plan : "free";
+
     const user = new User({
       username,
       email,
       password: hashedPassword,
       displayName: username,
       verificationToken,
-      verificationTokenExpiry
+      verificationTokenExpiry,
+      plan: userPlan,
+      billingPlan: userPlan
     });
     await user.save();
 

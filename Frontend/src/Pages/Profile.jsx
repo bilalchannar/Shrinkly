@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "../Components/Sidebar";
 import Footer from "../Components/Footer";
-import { usersAPI } from "../services/api";
+import { usersAPI, authAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import "../Css/Profile.css";
@@ -23,13 +23,14 @@ function formatLastActive(date) {
 
 export default function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, updateUser, logout, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "profile");
 
   // Profile data state
   const [formData, setFormData] = useState({
@@ -70,6 +71,17 @@ export default function Profile() {
       fetchProfile();
     }
   }, [authLoading]);
+
+  useEffect(() => {
+    if (!loading && location.state?.autoSelectPlan) {
+      const planToSelect = location.state.autoSelectPlan;
+      if (planToSelect !== billingPlan) {
+        handleDemoPlanUpdate(planToSelect);
+      }
+      // Clear location state so refreshes don't re-trigger
+      navigate(location.pathname, { replace: true, state: { activeTab: location.state.activeTab } });
+    }
+  }, [loading, location.state, billingPlan, navigate, location.pathname]);
 
   const fetchProfile = async () => {
     try {
@@ -168,6 +180,23 @@ export default function Profile() {
       }
     } catch (error) {
       toast.error(error.message || "Failed to change password");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleForgotPasswordFromProfile = async () => {
+    if (!formData.email) {
+      toast.error("User email not found");
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      const res = await authAPI.forgotPassword(formData.email);
+      toast.success("Password reset link has been sent to your email!");
+    } catch (error) {
+      toast.error(error.message || "Failed to send password reset link");
     } finally {
       setSaving(false);
     }
@@ -426,7 +455,6 @@ export default function Profile() {
                             name="username"
                             value={formData.username}
                             disabled
-                            style={{ backgroundColor: "#f0f0f0", cursor: 'not-allowed' }}
                           />
                         </div>
                       </div>
@@ -441,7 +469,6 @@ export default function Profile() {
                           name="email"
                           value={formData.email}
                           disabled
-                          style={{ backgroundColor: "#f0f0f0", cursor: 'not-allowed' }}
                         />
                         <small style={{ color: "#777" }}>Contact support to change your account email.</small>
                       </div>
@@ -529,7 +556,17 @@ export default function Profile() {
                   
                   <form className="profile-form" onSubmit={handlePasswordSubmit}>
                     <div className="form-field full-width">
-                      <label className="field-label">Current Password</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="field-label" style={{ margin: 0 }}>Current Password</label>
+                        <button 
+                          type="button" 
+                          onClick={handleForgotPasswordFromProfile} 
+                          disabled={saving}
+                          style={{ background: 'none', border: 'none', color: 'var(--primary-color)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                        >
+                          Forgot Password?
+                        </button>
+                      </div>
                       <input
                         className="field-input"
                         type="password"

@@ -391,7 +391,7 @@ const QRCodePage = () => {
                     <option value="">Custom Destination URL (Type manually below)</option>
                     {shortLinks.map(link => (
                       <option key={link._id} value={link._id}>
-                        /{link.shortCode} - {link.title || link.originalUrl.substring(0, 30)}
+                        /{link.shortCode} - {link.title || (link.original || link.originalUrl || "").substring(0, 30)}
                       </option>
                     ))}
                   </select>

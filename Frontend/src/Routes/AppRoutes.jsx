@@ -10,6 +10,7 @@ const Auth = React.lazy(() => import("../Auth/Auth.jsx"));
 const VerifyEmail = React.lazy(() => import("../Auth/VerifyEmail.jsx"));
 const ForgotPassword = React.lazy(() => import("../Auth/ForgotPassword.jsx"));
 const ResetPassword = React.lazy(() => import("../Auth/ResetPassword.jsx"));
+const OAuthSuccess = React.lazy(() => import("../Pages/OAuthSuccess.jsx"));
 const Home = React.lazy(() => import("../Pages/Home.jsx"));
 const Landing = React.lazy(() => import("../Pages/Landing.jsx"));
 const Link = React.lazy(() => import("../Pages/Link.jsx"));
@@ -44,6 +45,7 @@ const AppRoutes = () => {
           {/* Public pages */}
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/oauth-success" element={<OAuthSuccess />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />

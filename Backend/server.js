@@ -6,6 +6,8 @@ const connectDB = require("./config/db");
 const startCleanupJob = require("./jobs/cleanupJob");
 const startReportJobs = require("./jobs/reportJob");
 const errorMiddleware = require("./middleware/errorMiddleware");
+const passport = require("passport");
+require("./config/passport");
 
 // Import routes
 const linkRoutes = require("./routes/link");
@@ -31,8 +33,6 @@ const publicRoutes = require("./routes/public");
 
 const app = express();
 
-// ======================== SECURITY MIDDLEWARE ========================
-// Helmet - Secure HTTP headers
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -81,6 +81,8 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+app.use(passport.initialize());
 
 // Connect to MongoDB
 connectDB().then(() => {

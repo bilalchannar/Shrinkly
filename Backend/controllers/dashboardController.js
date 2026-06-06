@@ -41,7 +41,7 @@ exports.getUserDashboard = async (req, res) => {
     });
 
     const clicksResult = await Link.aggregate([
-      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+      { $match: { userId: new mongoose.Types.ObjectId(userId), isDeleted: { $ne: true } } },
       { $group: { _id: null, total: { $sum: "$clicks" } } }
     ]);
     const totalClicks = clicksResult[0]?.total || 0;
@@ -97,6 +97,15 @@ exports.getUserDashboard = async (req, res) => {
       { $limit: 5 }
     ]);
 
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+
+    const buildShortUrl = (link) => {
+      if (link.domain && link.domain !== "shrinkly.link") {
+        return `${baseUrl.startsWith("https") ? "https://" : "http://"}${link.domain}/${link.shortCode}`;
+      }
+      return `${baseUrl}/r/${link.shortCode}`;
+    };
+
     return res.json({
       success: true,
       stats: {
@@ -108,7 +117,7 @@ exports.getUserDashboard = async (req, res) => {
       recentLinks: recentLinks.map(l => ({
         _id: l._id,
         originalUrl: l.originalUrl,
-        shortUrl: `${l.domain}/${l.shortCode}`,
+        shortUrl: buildShortUrl(l),
         shortCode: l.shortCode,
         clicks: l.clicks,
         status: l.status,
@@ -117,7 +126,8 @@ exports.getUserDashboard = async (req, res) => {
       topLinks: topLinks.map(l => ({
         _id: l._id,
         originalUrl: l.originalUrl,
-        shortUrl: `${l.domain}/${l.shortCode}`,
+        shortUrl: buildShortUrl(l),
+        shortCode: l.shortCode,
         clicks: l.clicks
       })),
       clickTrends: clickTrends.map(t => ({ date: t._id, clicks: t.clicks })),

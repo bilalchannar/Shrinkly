@@ -38,6 +38,7 @@ export default function Home() {
   const [longUrl, setLongUrl] = useState("");
   const [customSlug, setCustomSlug] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
+  const [quickShortenResult, setQuickShortenResult] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -110,6 +111,7 @@ export default function Home() {
 
       if (data.success) {
         toast.success("Short link created!");
+        setQuickShortenResult(data.link?.short || data.shortUrl || null);
         setLongUrl("");
         setCustomSlug("");
         fetchDashboardData(); // Refresh metrics and links
@@ -280,6 +282,84 @@ export default function Home() {
                     </button>
                   </div>
                 </form>
+                {quickShortenResult && (
+                  <div className="quick-shorten-result" style={{
+                    marginTop: '1rem',
+                    padding: '1rem 1.25rem',
+                    background: 'rgba(124, 58, 237, 0.08)',
+                    border: '1px solid rgba(124, 58, 237, 0.25)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem',
+                    animation: 'fadeInUp 0.35s ease'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+                      <span style={{ fontSize: '1.2rem' }}>✅</span>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Your short link is ready!</p>
+                        <a
+                          href={quickShortenResult}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            color: '#7c3aed',
+                            fontWeight: 700,
+                            fontSize: '1rem',
+                            wordBreak: 'break-all',
+                            textDecoration: 'none'
+                          }}
+                        >
+                          {quickShortenResult}
+                        </a>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(quickShortenResult); toast.success('Copied!'); }}
+                        style={{
+                          padding: '0.45rem 1rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: '#7c3aed',
+                          color: '#fff',
+                          fontWeight: 600,
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s'
+                        }}
+                      >📋 Copy</button>
+                      <button
+                        onClick={() => window.open(quickShortenResult, '_blank')}
+                        style={{
+                          padding: '0.45rem 1rem',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)',
+                          background: 'transparent',
+                          color: 'var(--text-primary)',
+                          fontWeight: 600,
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s'
+                        }}
+                      >🔗 Open</button>
+                      <button
+                        onClick={() => setQuickShortenResult(null)}
+                        style={{
+                          padding: '0.45rem 0.6rem',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)',
+                          background: 'transparent',
+                          color: 'var(--text-secondary)',
+                          fontSize: '0.82rem',
+                          cursor: 'pointer'
+                        }}
+                        title="Dismiss"
+                      >✕</button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Click Growth Trend Widget */}
@@ -365,10 +445,10 @@ export default function Home() {
                             </td>
                             <td>
                               <div className="table-btn-group">
-                                <button className="btn-icon-action" onClick={() => handleCopyLink(link.shortUrl || `${window.location.origin}/r/${link.shortCode}`)} title="Copy Short Link">
+                                <button className="btn-icon-action" onClick={() => handleCopyLink(link.shortUrl || `http://localhost:5000/r/${link.shortCode}`)} title="Copy Short Link">
                                   📋
                                 </button>
-                                <button className="btn-icon-action" onClick={() => window.open(link.shortUrl || `/r/${link.shortCode}`, "_blank")} title="Open Original URL">
+                                <button className="btn-icon-action" onClick={() => window.open(link.shortUrl || `http://localhost:5000/r/${link.shortCode}`, "_blank")} title="Open Short Link">
                                   🔗
                                 </button>
                               </div>
