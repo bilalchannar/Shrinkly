@@ -9,29 +9,27 @@ services:
     startCommand: npm start
     envVars:
       - key: MONGO_URI
-        sync: false # Provide your MongoDB Atlas Connection String
+        sync: false
       - key: JWT_SECRET
-        generateValue: true # Generates a secure random JWT key automatically
+        generateValue: true
       - key: CORS_ORIGINS
-        sync: false # Set to your Frontend URL (e.g., https://shrinkly-frontend.onrender.com)
+        sync: false
       - key: FRONTEND_URL
-        sync: false # Set to your Frontend URL (e.g., https://shrinkly-frontend.onrender.com)
+        sync: false
       - key: BASE_URL
-        sync: false # Set to this Backend's URL (e.g., https://shrinkly-backend.onrender.com)
+        sync: false
       - key: CRON_ENABLED
         value: "true"
       - key: EMAIL_SERVICE
         value: gmail
       - key: EMAIL_USER
-        sync: false # SMTP Email Username (Optional)
+        sync: false
       - key: EMAIL_PASS
-        sync: false # SMTP App-specific Password (Optional)
+        sync: false
 
-  # 2. Frontend React SPA Service
-  - type: web
+  # 2. Frontend React SPA Service (Static Site)
+  - type: static
     name: shrinkly-frontend
-    env: static
-    plan: free
     rootDir: Frontend
     buildCommand: npm install && npm run build
     publishDir: build
@@ -42,4 +40,4 @@ services:
         type: rewrite
     envVars:
       - key: REACT_APP_API_URL
-        sync: false # Set manually to: https://shrinkly-backend.onrender.com/api
+        sync: false
