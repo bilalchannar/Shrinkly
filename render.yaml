@@ -1,0 +1,45 @@
+services:
+  # 1. Backend API Service
+  - type: web
+    name: shrinkly-backend
+    env: node
+    plan: free
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGO_URI
+        sync: false # Provide your MongoDB Atlas Connection String
+      - key: JWT_SECRET
+        generateValue: true # Generates a secure random JWT key automatically
+      - key: CORS_ORIGINS
+        sync: false # Set to your Frontend URL (e.g., https://shrinkly-frontend.onrender.com)
+      - key: FRONTEND_URL
+        sync: false # Set to your Frontend URL (e.g., https://shrinkly-frontend.onrender.com)
+      - key: BASE_URL
+        sync: false # Set to this Backend's URL (e.g., https://shrinkly-backend.onrender.com)
+      - key: CRON_ENABLED
+        value: "true"
+      - key: EMAIL_SERVICE
+        value: gmail
+      - key: EMAIL_USER
+        sync: false # SMTP Email Username (Optional)
+      - key: EMAIL_PASS
+        sync: false # SMTP App-specific Password (Optional)
+
+  # 2. Frontend React SPA Service
+  - type: web
+    name: shrinkly-frontend
+    env: static
+    plan: free
+    rootDir: Frontend
+    buildCommand: npm install && npm run build
+    publishDir: build
+    routes:
+      # Rewrites all requests to index.html to support React Router client-side routing
+      - src: /*
+        dest: /index.html
+        type: rewrite
+    envVars:
+      - key: REACT_APP_API_URL
+        sync: false # Set manually to: https://shrinkly-backend.onrender.com/api
