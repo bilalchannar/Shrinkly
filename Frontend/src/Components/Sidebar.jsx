@@ -136,7 +136,7 @@ const Sidebar = () => {
       <div className="sidebar-logo-section">
         <div className="logo-wrapper">
           <img 
-            src={collapsed ? "/shrinklyblacklogo.png" : "/shrinklyblack.png"} 
+            src={collapsed ? "/ShrinklyBlackLogo.png" : "/ShrinklyBlack.png"} 
             alt="Shrinkly Logo" 
             className="sidebar-logo"
           />

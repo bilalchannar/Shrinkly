@@ -44,7 +44,7 @@ export default function ReportAbuse() {
       <Toaster position="top-right" />
       <div className="report-abuse-card card-ds-glass animate-scale-up">
         <div className="logo-header">
-          <img src="/shrinklyblacklogo.png" alt="Shrinkly Logo" className="abuse-logo" />
+          <img src="/ShrinklyBlackLogo.png" alt="Shrinkly Logo" className="abuse-logo" />
           <h2>Report Link Abuse</h2>
           <p>
             Shrinkly takes safety seriously. If you encountered a link that violates our terms of service (phishing, malware, spam, or malicious content), please report it below.
