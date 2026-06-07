@@ -76,7 +76,7 @@ export default function ForgotPassword() {
             </div>
           )}
 
-          <Link to="/" className="auth-back-link">← Back to Login</Link>
+          <Link to="/auth" className="auth-back-link">← Back to Login</Link>
         </div>
       </div>
     </div>

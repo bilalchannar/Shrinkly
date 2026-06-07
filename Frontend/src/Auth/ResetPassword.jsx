@@ -119,13 +119,13 @@ export default function ResetPassword() {
               <div className="auth-status-icon">✅</div>
               <h2>Password Reset!</h2>
               <p>Your password has been successfully reset. You can now log in with your new password.</p>
-              <button className="auth-btn" onClick={() => navigate("/")}>
+              <button className="auth-btn" onClick={() => navigate("/auth")}>
                 Go to Login
               </button>
             </div>
           )}
 
-          <Link to="/" className="auth-back-link">← Back to Login</Link>
+          <Link to="/auth" className="auth-back-link">← Back to Login</Link>
         </div>
       </div>
     </div>
