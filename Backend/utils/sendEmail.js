@@ -28,7 +28,8 @@ const sendEmail = async (to, subject, html) => {
     html
   };
 
-  await transporter.sendMail(mailOptions);
+  const info = await transporter.sendMail(mailOptions);
+  console.log(`✉️ Email sent successfully to ${to}. Message ID: ${info.messageId}. Response: ${info.response}`);
 };
 
 module.exports = sendEmail;
