@@ -24,7 +24,13 @@ const signupValidation = [
     .trim()
     .notEmpty().withMessage("Email is required")
     .isEmail().withMessage("Please enter a valid email address")
-    .normalizeEmail(),
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: false,
+      outlookdotcom_remove_subaddress: false,
+      yahoo_remove_subaddress: false,
+      icloud_remove_subaddress: false
+    }),
 
   body("password")
     .notEmpty().withMessage("Password is required")
@@ -41,7 +47,13 @@ const loginValidation = [
     .trim()
     .notEmpty().withMessage("Email is required")
     .isEmail().withMessage("Please enter a valid email address")
-    .normalizeEmail(),
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: false,
+      outlookdotcom_remove_subaddress: false,
+      yahoo_remove_subaddress: false,
+      icloud_remove_subaddress: false
+    }),
 
   body("password")
     .notEmpty().withMessage("Password is required"),
@@ -55,7 +67,13 @@ const forgotPasswordValidation = [
     .trim()
     .notEmpty().withMessage("Email is required")
     .isEmail().withMessage("Please enter a valid email address")
-    .normalizeEmail(),
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: false,
+      outlookdotcom_remove_subaddress: false,
+      yahoo_remove_subaddress: false,
+      icloud_remove_subaddress: false
+    }),
 
   validate
 ];
@@ -80,7 +98,13 @@ const resendVerificationValidation = [
     .trim()
     .notEmpty().withMessage("Email is required")
     .isEmail().withMessage("Please enter a valid email address")
-    .normalizeEmail(),
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: false,
+      outlookdotcom_remove_subaddress: false,
+      yahoo_remove_subaddress: false,
+      icloud_remove_subaddress: false
+    }),
 
   validate
 ];
