@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { linksAPI } from "../services/api";
+import "../Css/RedirectPages.css";
 
 export default function LinkPassword() {
   const [searchParams] = useSearchParams();
@@ -32,51 +33,51 @@ export default function LinkPassword() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      background: "linear-gradient(135deg,#f0f4ff 0%,#e8ecff 100%)", fontFamily: "Segoe UI, sans-serif", padding: "20px"
-    }}>
-      <div style={{
-        background: "#fff", borderRadius: "20px", boxShadow: "0 14px 40px rgba(81,45,168,0.15)",
-        width: "100%", maxWidth: "420px", overflow: "hidden"
-      }}>
-        <div style={{ background: "linear-gradient(135deg,#512da8,#7b4fd4)", padding: "28px 40px", textAlign: "center" }}>
-          <div style={{ fontSize: "40px", marginBottom: "8px" }}>🔒</div>
-          <h1 style={{ color: "#fff", margin: 0, fontSize: "22px" }}>Protected Link</h1>
-          <p style={{ color: "rgba(255,255,255,0.8)", margin: "6px 0 0", fontSize: "13px" }}>
-            This link requires a password to access
-          </p>
-        </div>
-        <div style={{ padding: "36px 40px" }}>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <input
-              type="password"
-              placeholder="Enter password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              autoFocus
-              style={{
-                background: "#f0eeff", border: "1.5px solid transparent", padding: "13px 16px",
-                borderRadius: "10px", fontSize: "15px", width: "100%", boxSizing: "border-box",
-                outline: "none", fontFamily: "inherit"
-              }}
-            />
-            {error && <p style={{ color: "#e53935", fontSize: "13px", margin: 0 }}>{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                background: "linear-gradient(135deg,#512da8,#7b4fd4)", color: "#fff",
-                border: "none", padding: "14px", borderRadius: "10px", fontSize: "15px",
-                fontWeight: "600", cursor: "pointer", opacity: loading ? 0.7 : 1
-              }}
-            >
-              {loading ? "Checking..." : "Access Link →"}
-            </button>
-          </form>
-          <p style={{ textAlign: "center", marginTop: "20px", fontSize: "13px", color: "#999" }}>
-            Don't know the password? Contact the link owner.
-          </p>
+    <div className="redirect-page-container">
+      <div className="redirect-card card-ds" style={{ textAlign: "center" }}>
+        <div className="redirect-icon">🔒</div>
+        <h1 className="redirect-title">Protected Link</h1>
+        <p className="redirect-message">
+          This link requires a password to access.
+        </p>
+
+        {code && (
+          <div className="redirect-code-badge" style={{ marginBottom: "1.5rem" }}>
+            <span>/{code}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%", margin: "0 auto 1.5rem", maxWidth: "320px" }}>
+          <input
+            type="password"
+            placeholder="Enter password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            autoFocus
+            className="input-ds"
+            style={{ textAlign: "center" }}
+          />
+          {error && (
+            <p style={{ color: "var(--error-color)", fontSize: "0.85rem", margin: 0 }}>
+              ⚠️ {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-ds btn-ds-primary"
+            style={{ width: "100%" }}
+          >
+            {loading ? "Verifying..." : "Access Link →"}
+          </button>
+        </form>
+
+        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "2rem" }}>
+          Don't know the password? Contact the link owner.
+        </p>
+
+        <div className="redirect-branding">
+          <span className="brand-text">Powered by <strong>Shrinkly</strong></span>
         </div>
       </div>
     </div>

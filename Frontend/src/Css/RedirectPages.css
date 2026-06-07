@@ -1,13 +1,19 @@
-/* ===== Redirect Pages (Expired, Limit, Disabled) ===== */
+/* ===== Redirect Pages (Expired, Limit, Disabled, Password Protected) ===== */
 
 .redirect-page-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  background-color: #0b0f19;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(111, 66, 193, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(91, 49, 170, 0.12) 0%, transparent 45%);
   padding: 2rem;
-  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #f3f4f6;
+  position: relative;
+  overflow: hidden;
 }
 
 .redirect-card {
@@ -16,6 +22,19 @@
   text-align: center;
   padding: 3rem 2.5rem;
   animation: redirectFadeIn 0.5s ease-out;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.redirect-card:hover {
+  border-color: rgba(111, 66, 193, 0.3);
+  box-shadow: 0 12px 40px 0 rgba(111, 66, 193, 0.15);
+  transform: translateY(-4px);
 }
 
 @keyframes redirectFadeIn {
@@ -32,13 +51,13 @@
 .redirect-title {
   font-size: 1.75rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #fff;
   margin: 0 0 1rem;
 }
 
 .redirect-message {
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: #9ca3af;
   line-height: 1.6;
   margin: 0 0 1.5rem;
 }
@@ -46,13 +65,52 @@
 .redirect-code-badge {
   display: inline-flex;
   padding: 0.5rem 1.25rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 50px;
   font-family: monospace;
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: #9ca3af;
   margin-bottom: 1.5rem;
+}
+
+/* Custom override rules to match landing/auth inputs/buttons inside redirect card */
+.redirect-card .input-ds {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  border-radius: 50px !important;
+  padding: 0.8rem 1.5rem !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.redirect-card .input-ds:focus {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: #7c3aed !important;
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.3) !important;
+}
+
+.redirect-card .input-ds::placeholder {
+  color: #6b7280 !important;
+}
+
+.redirect-card .btn-ds-primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.8rem 2rem !important;
+  border-radius: 50px !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.4) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.redirect-card .btn-ds-primary:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.7) !important;
 }
 
 .redirect-actions {
@@ -65,16 +123,16 @@
 
 .redirect-branding {
   padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .brand-text {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: #6b7280;
 }
 
 .brand-text strong {
-  color: var(--primary-color);
+  color: #7c3aed;
 }
 
 /* Project Info Page */
