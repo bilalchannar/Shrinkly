@@ -620,7 +620,7 @@ const QRCodePage = () => {
                   </button>
                 </div>
 
-                <div className="qr-stats">
+                <div className="qr-stats" style={{ marginBottom: "1.5rem" }}>
                   <div className="stat">
                     <span className="stat-label">Resolution</span>
                     <span className="stat-value">{qrSize}x{qrSize}</span>
@@ -630,20 +630,20 @@ const QRCodePage = () => {
                     <span className="stat-value">PNG</span>
                   </div>
                 </div>
-              </div>
 
-              <div className="action-buttons">
-                <button className="btn-secondary" onClick={handleReset}>
-                  Reset style
-                </button>
-                <button 
-                  className="btn-primary"
-                  onClick={handleSaveQRCode}
-                  disabled={!destinationUrl.trim() || saving}
-                  style={{ backgroundColor: activeQrId ? 'var(--primary-color)' : 'var(--success-color)' }}
-                >
-                  {saving ? 'Saving...' : (activeQrId ? 'Update QR Code' : 'Save QR Code')}
-                </button>
+                <div className="action-buttons" style={{ borderTop: "1px solid var(--border-color)", paddingTop: "1.5rem" }}>
+                  <button className="btn-secondary" onClick={handleReset}>
+                    Reset style
+                  </button>
+                  <button 
+                    className="btn-primary"
+                    onClick={handleSaveQRCode}
+                    disabled={!destinationUrl.trim() || saving}
+                    style={{ backgroundColor: activeQrId ? 'var(--primary-color)' : 'var(--success-color)' }}
+                  >
+                    {saving ? 'Saving...' : (activeQrId ? 'Update QR Code' : 'Save QR Code')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
