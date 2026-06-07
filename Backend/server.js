@@ -33,6 +33,9 @@ const publicRoutes = require("./routes/public");
 
 const app = express();
 
+// Trust proxy (required for rate-limiting behind Render/Heroku reverse proxies)
+app.set("trust proxy", 1);
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
