@@ -36,6 +36,76 @@ export default function Landing() {
       text: "As an influencer, I need to know where my audience is coming from. Shrinkly's platform reports are clean, fast, and gorgeous.",
       name: "Emily R.",
       role: "Content Creator"
+    },
+    {
+      id: 4,
+      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
+      text: "We needed a secure way to distribute beta test links with password protection and expiry dates. Shrinkly worked flawlessly.",
+      name: "Michael B.",
+      role: "Product Manager"
+    },
+    {
+      id: 5,
+      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      text: "The weekly email cron reports save us hours of manual compiling. Our clients love seeing the detailed click breakdowns.",
+      name: "Jessica T.",
+      role: "Social Media Director"
+    },
+    {
+      id: 6,
+      image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150",
+      text: "The REST API is clean, developers loved integrating the bulk URL shortener into our automated user invitation pipeline.",
+      name: "David K.",
+      role: "Lead Architect"
+    },
+    {
+      id: 7,
+      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
+      text: "Our conversion rate grew by 15% after shifting to branded short links. Customers trust links like shop.ourbrand.com.",
+      name: "Elena M.",
+      role: "E-commerce Owner"
+    },
+    {
+      id: 8,
+      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
+      text: "The customized QR codes with brand colors made a huge difference at our last expo. Very clean scanning experience.",
+      name: "Marcus G.",
+      role: "Event Coordinator"
+    },
+    {
+      id: 9,
+      image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150",
+      text: "Real-time analytics is a lifesaver. We could instantly monitor traffic spikes during our press release launch.",
+      name: "Sophia P.",
+      role: "PR Specialist"
+    },
+    {
+      id: 10,
+      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+      text: "Adding custom domains was incredibly easy. For a growing SaaS company, having white-labeled links is a must-have.",
+      name: "Alex H.",
+      role: "Startup Founder"
+    },
+    {
+      id: 11,
+      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150",
+      text: "The cinematic, glassmorphic UI is a breath of fresh air. It feels premium and makes looking at analytics actually fun.",
+      name: "Clara W.",
+      role: "Creative Director"
+    },
+    {
+      id: 12,
+      image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
+      text: "The rate limiting and geo-location tracking provide extra security layers we couldn't find elsewhere.",
+      name: "Liam N.",
+      role: "Database Administrator"
+    },
+    {
+      id: 13,
+      image: "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=150",
+      text: "The multi-tenant workspaces allowed us to separate clients seamlessly. Outstanding support and features.",
+      name: "Olivia S.",
+      role: "Marketing Agency CEO"
     }
   ];
 
