@@ -282,6 +282,51 @@ exports.inviteMember = async (req, res) => {
 
     await workspace.save();
 
+    // Send invitation email asynchronously (don't block the API response)
+    try {
+      const inviter = await User.findById(req.userId);
+      const inviterName = inviter ? (inviter.username || inviter.email) : "A teammate";
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const acceptLink = `${frontendUrl}/auth`;
+
+      const emailSubject = `Invitation to join workspace "${workspace.name}" on Shrinkly`;
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="color: #6366f1; margin: 0; font-size: 24px;">Shrinkly Workspace Invitation</h2>
+          </div>
+          <p style="font-size: 16px; color: #0f172a; line-height: 1.6;">
+            Hello,
+          </p>
+          <p style="font-size: 16px; color: #334155; line-height: 1.6;">
+            <strong>${inviterName}</strong> has invited you to join their team workspace, <strong>"${workspace.name}"</strong>, on Shrinkly as a <strong>${memberRole}</strong>.
+          </p>
+          <p style="font-size: 16px; color: #334155; line-height: 1.6;">
+            In this workspace, you can collaborate on creating short links, designing customized QR codes, and tracking team analytics.
+          </p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${acceptLink}" style="background-color: #6366f1; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block;">
+              Join Workspace
+            </a>
+          </div>
+          <p style="font-size: 14px; color: #64748b; line-height: 1.6;">
+            After clicking the button above, please log in with your email (<strong>${cleanEmail}</strong>) and navigate to the <strong>Workspaces</strong> tab to accept the invitation.
+          </p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+          <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+            If you did not expect this invitation, you can safely ignore this email.
+          </p>
+        </div>
+      `;
+
+      const sendEmail = require("../utils/sendEmail");
+      sendEmail(cleanEmail, emailSubject, emailHtml).catch(err => {
+        console.error("Failed to send workspace invitation email:", err);
+      });
+    } catch (emailErr) {
+      console.error("Failed to compile invite email data:", emailErr);
+    }
+
     return res.json({
       success: true,
       message: "Member invited successfully",
