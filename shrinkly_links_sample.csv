@@ -1,0 +1,4 @@
+originalUrl,slug,tags,expiresAt,maxClicks
+https://google.com,google-home,search;utility,,
+https://github.com/bilalchannar/Shrinkly,shrinkly-repo,dev;github,2028-12-31T23:59:59.000Z,500
+https://wikipedia.org,wiki-info,info;study,,100
